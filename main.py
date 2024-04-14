@@ -6,6 +6,7 @@ from flask import Flask, jsonify, request
 import os
 from src.component.voice_decryption import WavToTextConverter
 from src.component.start_test import QuestionFetcher
+from src.component.next import QuestionManager
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -64,6 +65,28 @@ def decode_audio():
     except Exception as e:
         return str(e), 500
 
+
+
+@app.route('/api/v1/get_next_question_id', methods=['GET'])
+def get_next_question():
+    username = request.args.get('username')
+    if not username:
+        return jsonify({'error': 'Username not provided'}), 400
+
+    question_manager = QuestionManager()
+    next_question_id = question_manager.get_next_question_id(username)
+
+    if next_question_id is not None:
+        return jsonify({'next_question_id': next_question_id})
+    else:
+        return jsonify({'message': 'No more questions left for this user'}), 404
+
+
+
+# # Example usage:
+# username = "example_user"
+# QuestionManager_instance = QuestionManager()
+# next_question_id = QuestionManager_instance.get_next_question_id(username)
 
 
 
