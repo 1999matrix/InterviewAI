@@ -51,7 +51,8 @@ def create_table2():
                 username VARCHAR(255),
                 q_id TEXT,
                 response TEXT,
-                result TEXT
+                result TEXT,
+                response_count INT
             )
             """
             cursor.execute(create_table_query)
