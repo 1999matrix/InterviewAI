@@ -5,7 +5,7 @@ connection = mysql.connector.connect(user='root', password='Admin@12345', host='
 cursor = connection.cursor()
 
 # The revised DELETE statement
-query = """DELETE FROM table2 WHERE username='Bhupendra';"""
+query = """DELETE FROM table2 WHERE username='example_user';"""
 
 cursor.execute(query)
 
@@ -16,4 +16,3 @@ connection.commit()
 cursor.close()
 connection.close()
 
-#3,7,1,2,5
