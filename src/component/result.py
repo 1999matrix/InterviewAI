@@ -2,6 +2,7 @@ import mysql.connector
 import requests
 import json
 from src.utils import connect_to_user_db
+import psycopg2
 
 class ResponseFetcher:
     def __init__(self):
@@ -36,7 +37,7 @@ class ResponseFetcher:
                 cursor.close()
                 connection.close()
 
-    def check_response(self):
+    def check_response(self, username):
         if self.question is None or self.response is None:
             return
 
@@ -55,13 +56,24 @@ class ResponseFetcher:
                 if json_str:
                     json_obj = json.loads(json_str)
                     generated_response += json_obj['response']
-            return generated_response
-        else:
-            print("Error:", response.status_code, response.reason)
+        
+            try:
+                conn = connect_to_user_db()  # Assuming this method returns a database connection
+                cursor = conn.cursor()
+                # Assuming username is the column to identify users and 'result' is the column to store generated responses
+                query = "UPDATE table2 SET result = %s WHERE username = %s"
+                cursor.execute(query, (generated_response, username))  
+                conn.commit()
+                cursor.close()
+                conn.close()
+            except (Exception, psycopg2.Error) as error:
+                print("Error while connecting to PostgreSQL or executing query:", error)
+                # Handle error appropriately
 
+            return generated_response
 
 # Example usage:
 username = "example_user"
 fetcher = ResponseFetcher()
 fetcher.fetch_q_id_and_response(username)
-print(fetcher.check_response())
+print(fetcher.check_response(username))
