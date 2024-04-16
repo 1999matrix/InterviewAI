@@ -28,7 +28,7 @@ def connect_to_user_db():
             database="db_77"
         )
         if connection.is_connected():
-            print("Connected to MySQL Server")
+            pass
         return connection
     except mysql.connector.Error as error:
         print("Error:", error)
