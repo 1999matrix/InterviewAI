@@ -1,26 +1,9 @@
 import mysql.connector
 from src.utils import connect_to_user_db
 
-import mysql.connector
-
-def connect_to_user_db_and_table2():
-    try:
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="Admin@12345",
-            database="db_77"
-        )
-        if connection.is_connected():
-            print("Connected to MySQL Server")
-        return connection
-    except mysql.connector.Error as error:
-        print("Error:", error)
-        return None
-
 def fetch_q_id_and_response(username):
     try:
-        connection = connect_to_user_db_and_table2()
+        connection = connect_to_user_db()
         if connection:
             cursor = connection.cursor()
             query = "SELECT q_id, response, response_count FROM table2 WHERE username = %s"
