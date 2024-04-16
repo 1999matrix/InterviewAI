@@ -19,7 +19,7 @@ def convert_wav_to_text(wav_file):
             print("could not understand the audio")
 
 
-def connect_to_user_db_and_table2():
+def connect_to_user_db():
     try:
         connection = mysql.connector.connect(
             host="localhost",

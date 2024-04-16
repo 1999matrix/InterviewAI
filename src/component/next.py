@@ -1,20 +1,20 @@
 import mysql.connector
-from src.utils import connect_to_user_db_and_table2
+from src.utils import connect_to_user_db
 import mysql.connector
 
 
 
 import mysql.connector
-from src.utils import connect_to_user_db_and_table2
+from src.utils import connect_to_user_db
 
 class QuestionManager:
     def __init__(self):
         self.connection = None
 
-    def get_next_question_id(self, username):  # Added 'self' parameter here
+    def get_next_question_id(self, username):  
         connection = None
         try:
-            connection = connect_to_user_db_and_table2()
+            connection = connect_to_user_db()
             cursor = connection.cursor()
             # Check if the username exists in the table
             cursor.execute("SELECT response_count, q_id FROM table2 WHERE username = %s", (username,))
@@ -37,6 +37,7 @@ class QuestionManager:
             if connection:
                 cursor.close()
                 connection.close()
+
 
 
 if __name__ == "__main__":
