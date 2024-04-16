@@ -72,8 +72,8 @@ class ResponseFetcher:
 
             return generated_response
 
-# Example usage:
-username = "example_user"
-fetcher = ResponseFetcher()
-fetcher.fetch_q_id_and_response(username)
-print(fetcher.check_response(username))
+# # Example usage:
+# username = "example_user"
+# fetcher = ResponseFetcher()
+# fetcher.fetch_q_id_and_response(username)
+# print(fetcher.check_response(username))

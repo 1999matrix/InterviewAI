@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 import sys
 from src.utils import convert_wav_to_text 
-from src.utils import connect_to_user_db_and_table2 
+from src.utils import connect_to_user_db 
 
 load_dotenv()
 
@@ -15,7 +15,7 @@ load_dotenv()
 #         text = convert_wav_to_text(wav_file_path)
         
 #         # Update the database with the converted text
-#         db_connection = connect_to_user_db_and_table2()
+#         db_connection = connect_to_user_db()
 #         if db_connection:
 #             cursor = db_connection.cursor()
 #             print("going to send data in table2")
@@ -58,7 +58,7 @@ class WavToTextConverter:
         text = convert_wav_to_text(wav_file_path)
         
         # Update the database with the converted text
-        db_connection = connect_to_user_db_and_table2()
+        db_connection = connect_to_user_db()
         if db_connection:
             cursor = db_connection.cursor()
             print("going to send data in table2")
