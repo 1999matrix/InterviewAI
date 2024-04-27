@@ -19,7 +19,7 @@ def insert_questions():
             host="localhost",
             user="root",
             password="Admin@12345",
-            database="db_77"
+            database="Python_db"
         )
         if connection.is_connected():
             print("Connected to MySQL Server")
@@ -27,7 +27,7 @@ def insert_questions():
 
             # Insert questions into table1
             for question in questions:
-                cursor.execute("INSERT INTO table1 (question) VALUES (%s)", (question,))
+                cursor.execute("INSERT INTO level_low (question) VALUES (%s)", (question,))
                 print(f"Question '{question}' inserted successfully")
 
             # Commit the transaction

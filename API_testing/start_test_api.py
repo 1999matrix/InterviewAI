@@ -3,7 +3,7 @@ import requests
 # Define the parameters
 params = {
     "username": "example_user",
-    "topic": "python",
+    "topic": "Python_db",
     "level": "low"
 }
 

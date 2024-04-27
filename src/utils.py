@@ -25,7 +25,7 @@ def connect_to_user_db():
             host="localhost",
             user="root",
             password="Admin@12345",
-            database="db_77"
+            database="user_test_info_db"
         )
         if connection.is_connected():
             pass

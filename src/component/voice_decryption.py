@@ -64,7 +64,7 @@ class WavToTextConverter:
             print("going to send data in table2")
             # Construct the SQL query
             sql_query = """
-                        UPDATE table2 
+                        UPDATE user_test_info 
                         SET 
                             response = CONCAT_WS(',', IF(response='', NULL, response), %s),
                             response_count = IF(response_count IS NULL, 1, response_count + 1)
@@ -79,7 +79,7 @@ class WavToTextConverter:
                 print("cursor is ready")
                 # Commit the changes
                 db_connection.commit()
-                print("send data to table2 successfully")
+                print("send data to user_test_info successfully")
             except Exception as e:
                 print("Error occurred while executing SQL query:", e)
                 # Rollback the changes

@@ -1,12 +1,12 @@
 import mysql.connector
 
-def create_table1():
+def python_table_creation():
     try:
         connection = mysql.connector.connect(
             host="localhost",
             user="root",
             password="Admin@12345",
-            database="db_77"
+            database="Python_db"
         )
         if connection.is_connected():
             print("Connected to MySQL Server")
@@ -14,7 +14,7 @@ def create_table1():
 
             # Create the table
             create_table_query = """
-            CREATE TABLE IF NOT EXISTS table1 (
+            CREATE TABLE IF NOT EXISTS level_low (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 question VARCHAR(255)
             )
@@ -34,20 +34,20 @@ def create_table1():
         print("Error:", error)
 
 
-def create_table2():
+def create_user_test_info_table():
     try:
         connection = mysql.connector.connect(
             host="localhost",
             user="root",
             password="Admin@12345",
-            database="db_77"
+            database="user_test_info_db"
         )
         if connection.is_connected():
             print("Connected to MySQL Server")
             cursor = connection.cursor()
 
             create_table_query = """
-            CREATE TABLE IF NOT EXISTS table2 (
+            CREATE TABLE IF NOT EXISTS user_test_info (
                 username VARCHAR(255),
                 q_id TEXT,
                 response TEXT,
@@ -56,7 +56,7 @@ def create_table2():
             )
             """
             cursor.execute(create_table_query)
-            print("Table 'table2' created successfully")
+            print("Table 'user_test_info' created successfully")
 
             connection.commit()
 
@@ -70,5 +70,5 @@ def create_table2():
 
 
 # Call the function to create the table
-create_table1()
-create_table2()
+python_table_creation()
+create_user_test_info_table()

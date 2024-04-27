@@ -83,7 +83,7 @@ class QuestionManager:
             thread.start()
             
             # Check if the username exists in the table
-            cursor.execute("SELECT response_count, q_id FROM table2 WHERE username = %s", (username,))
+            cursor.execute("SELECT response_count, q_id FROM user_test_info WHERE username = %s", (username,))
             user_row = cursor.fetchone()
 
             if user_row:  # If username exists

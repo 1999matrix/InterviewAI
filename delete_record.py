@@ -1,11 +1,11 @@
 import mysql.connector
 
 # Establish a connection to the database
-connection = mysql.connector.connect(user='root', password='Admin@12345', host='localhost', database='db_77')
+connection = mysql.connector.connect(user='root', password='Admin@12345', host='localhost', database='user_test_info_db')
 cursor = connection.cursor()
 
 # The revised DELETE statement
-query = """DELETE FROM table2 WHERE username='example_user';"""
+query = """DELETE FROM user_test_info WHERE username='example_user';"""
 
 cursor.execute(query)
 
