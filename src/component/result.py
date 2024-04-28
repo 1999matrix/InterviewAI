@@ -2,6 +2,7 @@ import mysql.connector
 import requests
 import json
 from src.utils import connect_to_user_db
+from src.utils import connect_to_question_db
 import psycopg2
 
 class ResponseFetcher:
@@ -9,12 +10,14 @@ class ResponseFetcher:
         self.question = None
         self.response = None
 
-    def fetch_q_id_and_response(self, username):
+    def fetch_q_id_and_response(self, username, topic, level):
         try:
             connection = connect_to_user_db()
+            question_table_connection = connect_to_question_db(topic)
             if connection:
                 cursor = connection.cursor()
-                query = "SELECT q_id, response, response_count FROM table2 WHERE username = %s"
+                question_table_cursor = question_table_connection.cursor()
+                query = "SELECT q_id, response, response_count FROM user_test_info WHERE username = %s"
                 cursor.execute(query, (username,))
                 result = cursor.fetchone()
                 if result:
@@ -23,8 +26,8 @@ class ResponseFetcher:
                     response_count = result[2]
                     if response_count > 0 and response_count <= len(q_id_list):
                         q_id = q_id_list[response_count - 1]  # response_count as index
-                        cursor.execute("SELECT question FROM table1 WHERE id = %s", (q_id,))
-                        self.question = cursor.fetchone()[0]
+                        question_table_cursor.execute(f"SELECT question FROM {level} WHERE id = %s", (q_id,))
+                        self.question = question_table_cursor.fetchone()[0]
                         self.response = response_list[response_count - 1]  # response_count as index
                     else:
                         print("Invalid response count")
@@ -35,7 +38,9 @@ class ResponseFetcher:
         finally:
             if connection and connection.is_connected():
                 cursor.close()
+                question_table_cursor.close()
                 connection.close()
+                question_table_connection.close()
 
     def check_response(self, username):
         if self.question is None or self.response is None:
@@ -61,7 +66,7 @@ class ResponseFetcher:
                 conn = connect_to_user_db()  # Assuming this method returns a database connection
                 cursor = conn.cursor()
                 # Assuming username is the column to identify users and 'result' is the column to store generated responses
-                query = "UPDATE table2 SET result = %s WHERE username = %s"
+                query = "UPDATE user_test_info SET result = %s WHERE username = %s"
                 cursor.execute(query, (generated_response, username))  
                 conn.commit()
                 cursor.close()
@@ -74,6 +79,8 @@ class ResponseFetcher:
 
 # # Example usage:
 # username = "example_user"
+# topic = "Python_db"
+# level = "level_low"
 # fetcher = ResponseFetcher()
-# fetcher.fetch_q_id_and_response(username)
+# fetcher.fetch_q_id_and_response(username, topic, level)
 # print(fetcher.check_response(username))

@@ -4,7 +4,9 @@ import requests
 url = 'http://localhost:5000/api/v1/get_next_question_id'
 
 # Define the parameters you want to send
-params = {'username': 'example_user'}
+params = {'username': 'example_user',
+          'topic':'Python_db',
+          'level':'level_low'}
 
 # Send a GET request to the API endpoint
 response = requests.get(url, params=params)

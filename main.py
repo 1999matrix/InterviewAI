@@ -70,11 +70,13 @@ def decode_audio():
 @app.route('/api/v1/get_next_question_id', methods=['GET'])
 def get_next_question():
     username = request.args.get('username')
+    topic = request.args.get('topic')
+    level = request.args.get('level')
     if not username:
         return jsonify({'error': 'Username not provided'}), 400
 
     question_manager = QuestionManager()
-    next_question_id = question_manager.get_next_question_id(username)
+    next_question_id = question_manager.get_next_question_id(username, topic, level)
 
     if next_question_id is not None:
         return jsonify({'next_question_id': next_question_id})

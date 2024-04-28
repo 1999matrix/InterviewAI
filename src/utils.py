@@ -33,3 +33,20 @@ def connect_to_user_db():
     except mysql.connector.Error as error:
         print("Error:", error)
         return None
+
+
+
+def connect_to_question_db(topic):
+    try:
+        connection = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="Admin@12345",
+            database=topic
+        )
+        if connection.is_connected():
+            pass
+        return connection
+    except mysql.connector.Error as error:
+        print("Error:", error)
+        return None
