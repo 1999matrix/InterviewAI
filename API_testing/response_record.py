@@ -35,7 +35,7 @@ FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 44100
 CHUNK = 1024
-RECORD_SECONDS = 5  # Adjust the recording duration as needed
+RECORD_SECONDS = 12  # Adjust the recording duration as needed
 
 # Start recording
 stream = audio.open(format=FORMAT, channels=CHANNELS,
