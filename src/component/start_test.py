@@ -71,7 +71,6 @@ class QuestionFetcher:
                 # Check if username already exists in user_test_info
                 user_cursor.execute("SELECT * FROM user_test_info WHERE username = %s", (self.username,))
                 if not user_cursor.fetchall():
-                    print("user_cursor does not exist")
                     # Insert a new row into user_test_info
                     user_cursor.execute("INSERT INTO user_test_info (username, q_id, response, result) VALUES (%s, %s, '', '')",
                                    (self.username, ','.join(questions_ids)))

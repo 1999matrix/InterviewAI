@@ -48,8 +48,9 @@ class ResponseFetcher:
 
         url = 'http://localhost:11434/api/generate'
         data = {
-            "model": "llama2",
-            "prompt": f"this is a computer language interview question, check this question , {self.question}? and response for this question is {self.response}.  give me these three things only in shorts as possible - 1)Correctness given response is correct or not or it partially correct or compleltly wrong 2)correct explaination 3)conculsion     only these three points"
+            "model": "llama3",
+            "prompt": f"Given the following question and response, provide the following three pieces of information: 1) Correctness: Indicate whether the response is correct, partially correct, or incorrect. 2) Explanation: If the response is incorrect or partially correct, provide the correct explanation. 3) Conclusion: Summarize the accuracy of the response and suggest any improvements if necessary. Question: '{self.question}?' Response: '{self.response}'"
+
         }
 
         response = requests.post(url, json=data)
