@@ -1,3 +1,5 @@
+#this component is now not very usefull because we are receiving text directly from UI using text_to_db.py file 
+
 import speech_recognition as sr
 from dotenv import load_dotenv
 import os
