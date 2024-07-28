@@ -7,6 +7,8 @@ import os
 from src.component.voice_decryption import WavToTextConverter
 from src.component.start_test import QuestionFetcher
 from src.component.next import QuestionManager
+from src.component.text_to_db import TextAppender
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -31,9 +33,6 @@ def start_test():
 
 
 
-
-import os
-from flask import request, jsonify
 
 @app.route("/api/v1/voice_decode", methods=["POST"])
 def decode_audio():
@@ -85,12 +84,23 @@ def get_next_question():
 
 
 
-# # Example usage:
-# username = "example_user"
-# QuestionManager_instance = QuestionManager()
-# next_question_id = QuestionManager_instance.get_next_question_id(username)
 
+@app.route('/api/v1/append_text', methods=['POST'])
+def append_text():
+    try:
+        data = request.json
+        username = data.get('username')
+        text = data.get('text')
 
+        if not username or not text:
+            return jsonify({"error": "Invalid input"}), 400
+        
+        appender = TextAppender()
+        result = appender.append_text(username, text)
+        return jsonify({"result": result})
+    
+    except Exception as e:
+        return str(e), 500
 
 
 
