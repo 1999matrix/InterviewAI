@@ -3,6 +3,7 @@ from src.utils import connect_to_user_db
 from src.component.result import ResponseFetcher
 import threading 
 
+
 class QuestionManager:
     def __init__(self):
         self.connection = None
