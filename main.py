@@ -71,16 +71,20 @@ def get_next_question():
     username = request.args.get('username')
     topic = request.args.get('topic')
     level = request.args.get('level')
+    text = request.args.get('text')
+
     if not username:
         return jsonify({'error': 'Username not provided'}), 400
 
     question_manager = QuestionManager()
+    question_manager.text_db(username, text)  # Corrected method call
     next_question_id = question_manager.get_next_question_id(username, topic, level)
 
     if next_question_id is not None:
         return jsonify({'next_question_id': next_question_id})
     else:
         return jsonify({'message': 'No more questions left for this user'}), 404
+
 
 
 

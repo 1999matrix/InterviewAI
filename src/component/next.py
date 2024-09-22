@@ -2,11 +2,17 @@ import mysql.connector
 from src.utils import connect_to_user_db
 from src.component.result import ResponseFetcher
 import threading 
+from src.component.text_to_db import TextAppender
 
 
-class QuestionManager:
+class QuestionManager(TextAppender):
     def __init__(self):
+        super().__init__()
         self.connection = None
+
+    def text_db(self, username, text):
+        self.append_text(username, text)
+
 
     def trigger_analysis(self, username, topic, level):
         try:
@@ -14,7 +20,7 @@ class QuestionManager:
             response_fetcher = ResponseFetcher()
             response_fetcher.fetch_q_id_and_response(username, topic, level)
             response_fetcher.check_response(username)
-        except Exception as e:
+        except Exception as e: 
             print("Error while trigger_analysis:", e)
 
     def get_next_question_id(self, username, topic, level):  
