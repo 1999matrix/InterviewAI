@@ -9,6 +9,7 @@ params = {'username': 'example_user',
           'level':'level_low',
           'text':'python is a high level interpreter language'}
 
+
 # Send a GET request to the API endpoint
 response = requests.get(url, params=params)
 
