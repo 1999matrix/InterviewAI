@@ -1,5 +1,6 @@
 import requests
 
+
 # Define the URL of the API endpoint
 url = 'http://localhost:5000/api/v1/get_next_question_id'
 
