@@ -1,7 +1,7 @@
 import requests
 import json
 
-BASE_URL = "http://localhost:5000/api/v1"
+BASE_URL = "http://localhost:7777/api/v1"
 
 def test_append_text(username, text):
     url = f"{BASE_URL}/append_text"

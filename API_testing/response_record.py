@@ -8,7 +8,7 @@ import wave
 from datetime import datetime
 
 # Define the URL of your Flask API
-url = "http://localhost:5000/api/v1/voice_decode"
+url = "http://localhost:7777/api/v1/voice_decode"
 
 # Define the username
 username = "example_user"

@@ -8,7 +8,7 @@ params = {
 }
 
 # Define the URL of your Flask API
-url = "http://localhost:5000/api/v1/start_test"
+url = "http://localhost:7777/api/v1/start_test"
 
 # Send a POST request with the parameters
 response = requests.post(url, data=params)
