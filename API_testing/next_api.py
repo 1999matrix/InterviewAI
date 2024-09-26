@@ -2,7 +2,7 @@ import requests
 
 
 # Define the URL of the API endpoint
-url = 'http://localhost:5000/api/v1/get_next_question_id'
+url = 'http://localhost:7777/api/v1/get_next_question_id'
 
 # Define the parameters you want to send
 params = {'username': 'example_user',

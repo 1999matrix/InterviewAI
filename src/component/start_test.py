@@ -1,20 +1,34 @@
 import mysql.connector
 import random
+from dotenv import load_dotenv
+import os
 
 class QuestionFetcher:
+
     def __init__(self, username, topic, level):
+        load_dotenv()
         self.username = username
         self.topic = topic
         self.level = level
         self._question_connection = None
         self._user_info_connection = None
+        self.user_test_info_db = os.getenv("user_test_info_db")
+        self.mysql_database_password = os.getenv("mysql_database_password")
+        self.mysql_database_user = os.getenv("mysql_database_user")
+        self.mysql_database_host = os.getenv("mysql_database_host")
+        print(self.mysql_database_password)
+        print(self.user_test_info_db)
+        print(self.mysql_database_user)
+        print(self.mysql_database_host)
+
+
     def connect_to_user_info_database(self):
         try:
             self._user_info_connection = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="Admin@12345",
-                database= "user_test_info_db"
+                host=self.mysql_database_host,
+                user=self.mysql_database_user,
+                password=self.mysql_database_password,
+                database= self.user_test_info_db
             )
             if self._user_info_connection.is_connected():
                 print("Connected to User Info MySQL Server")
@@ -24,9 +38,9 @@ class QuestionFetcher:
     def connect_to_question_database(self):
         try:
             self._question_connection = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="Admin@12345",
+                host=self.mysql_database_host,
+                user=self.mysql_database_user,
+                password=self.mysql_database_password,
                 database=self.topic
             )
             if self._question_connection.is_connected():

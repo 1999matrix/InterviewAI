@@ -1,13 +1,18 @@
 import mysql.connector
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 def python_table_creation():
     try:
         connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="Admin@12345",
-            database="Python_db"
+            host=os.getenv("mysql_database_host"),
+            user=os.getenv("mysql_database_user"),
+            password=os.getenv("mysql_database_password"),
+            database=os.getenv("Python_db")
         )
+
         if connection.is_connected():
             print("Connected to MySQL Server")
             cursor = connection.cursor()
@@ -37,10 +42,10 @@ def python_table_creation():
 def create_user_test_info_table():
     try:
         connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="Admin@12345",
-            database="user_test_info_db"
+            host=os.getenv("mysql_database_host"),
+            user=os.getenv("mysql_database_user"),
+            password=os.getenv("mysql_database_password"),
+            database=os.getenv("user_test_info_db")
         )
         if connection.is_connected():
             print("Connected to MySQL Server")

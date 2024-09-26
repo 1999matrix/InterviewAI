@@ -3,7 +3,10 @@ from dotenv import load_dotenv
 import os
 import sys
 import mysql.connector
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 
 def convert_wav_to_text(wav_file):
     recognizer = sr.Recognizer()
@@ -22,10 +25,10 @@ def convert_wav_to_text(wav_file):
 def connect_to_user_db():
     try:
         connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="Admin@12345",
-            database="user_test_info_db"
+            host=os.getenv("mysql_database_host"),
+            user=os.getenv("mysql_database_user"),
+            password=os.getenv("mysql_database_password"),
+            database=os.getenv("user_test_info_db")
         )
         if connection.is_connected():
             pass
@@ -39,9 +42,9 @@ def connect_to_user_db():
 def connect_to_question_db(topic):
     try:
         connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="Admin@12345",
+            host=os.getenv("mysql_database_host"),
+            user=os.getenv("mysql_database_user"),
+            password=os.getenv("mysql_database_password"),
             database=topic
         )
         if connection.is_connected():

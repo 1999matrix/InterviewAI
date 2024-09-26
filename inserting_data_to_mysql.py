@@ -1,4 +1,7 @@
 import mysql.connector
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def insert_questions():
     questions = [
@@ -16,10 +19,10 @@ def insert_questions():
 
     try:
         connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="Admin@12345",
-            database="Python_db"
+            host=os.getenv("mysql_database_host"),
+            user=os.getenv("mysql_database_user"),
+            password=os.getenv("mysql_database_password"),
+            database=os.getenv("Python_db")
         )
         if connection.is_connected():
             print("Connected to MySQL Server")
