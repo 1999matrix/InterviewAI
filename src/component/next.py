@@ -5,6 +5,8 @@ import threading
 from src.component.text_to_db import TextAppender
 
 
+
+
 class QuestionManager(TextAppender):
     def __init__(self):
         super().__init__()
