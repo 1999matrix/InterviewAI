@@ -53,3 +53,27 @@ def connect_to_question_db(topic):
     except mysql.connector.Error as error:
         print("Error:", error)
         return None
+
+
+
+
+def fetch_question(topic,level, id):
+    connection = connect_to_question_db(topic)
+    if connection is None:
+        return None
+
+    cursor = connection.cursor()
+    query = f"SELECT question FROM {level} WHERE id = %s"
+    try:
+        cursor.execute(query, (id,))
+        question = cursor.fetchone()
+        if question:
+            return question[0]
+        else:
+            return None
+    except mysql.connector.Error as error:
+        print("Error:", error)
+        return None
+    finally:
+        cursor.close()
+        connection.close()

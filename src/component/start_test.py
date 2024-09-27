@@ -2,6 +2,7 @@ import mysql.connector
 import random
 from dotenv import load_dotenv
 import os
+from src.utils import fetch_question
 
 class QuestionFetcher:
 
@@ -68,7 +69,7 @@ class QuestionFetcher:
                     first_id_question_table = "level_low"
                     query = ("SELECT id FROM level_low ORDER BY RAND() LIMIT 5")
                 elif self.level == "medium":
-                    first_id_question_table = "first_id_question_table"
+                    first_id_question_table = "level_medium"
                     query = ("SELECT id FROM first_id_question_table ORDER BY RAND() LIMIT 4")
                 elif self.level == "advance":
                     first_id_question_table = "level_high"
@@ -80,7 +81,7 @@ class QuestionFetcher:
                 cursor.execute(query)
                 questions_ids = [str(row[0]) for row in cursor.fetchall()]
                 first_id = questions_ids[0] if questions_ids else None
-                print(questions_ids)
+
 
                 # Check if username already exists in user_test_info
                 user_cursor.execute("SELECT * FROM user_test_info WHERE username = %s", (self.username,))
@@ -94,7 +95,8 @@ class QuestionFetcher:
                 self._question_connection.commit()
                 self._user_info_connection.commit()
 
-                return first_id
+                question = fetch_question(self.topic,first_id_question_table,first_id)
+                return question
 
             except mysql.connector.Error as error:
                 print("Error fetching questions:", error)
