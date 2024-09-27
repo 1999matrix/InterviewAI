@@ -6,7 +6,7 @@ url = 'http://localhost:7777/api/v1/get_next_question_id'
 # Define the parameters you want to send
 params = {'username': 'example_user',
           'topic':'Python_db',
-          'level':'level_low',
+          'level':'low',
           'text':'python is a high level interpreter language'}
 
 # Send a GET request to the API endpoint
