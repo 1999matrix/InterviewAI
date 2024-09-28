@@ -15,13 +15,13 @@ load_dotenv()
 
 app = Flask(__name__)
 
-@app.route("/api/v1/start_test", methods=["POST"])
+@app.route("/api/v1/start_test", methods=["GET"])
 def start_test():
     try:
-        # Extract parameters from the POST request
-        username = request.form.get("username")
-        topic = request.form.get("topic")
-        level = request.form.get("level")
+        # Extract parameters from the URL query string
+        username = request.args.get("username")
+        topic = request.args.get("topic")
+        level = request.args.get("level")
 
         # Create an instance of QuestionFetcher with the extracted parameters
         question_id_fetcher_instance = QuestionFetcher(username, topic, level)
