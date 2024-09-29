@@ -17,10 +17,10 @@ class QuestionFetcher:
         self.mysql_database_password = os.getenv("mysql_database_password")
         self.mysql_database_user = os.getenv("mysql_database_user")
         self.mysql_database_host = os.getenv("mysql_database_host")
-        print(self.mysql_database_password)
-        print(self.user_test_info_db)
-        print(self.mysql_database_user)
-        print(self.mysql_database_host)
+        # print(self.mysql_database_password)
+        # print(self.user_test_info_db)
+        # print(self.mysql_database_user)
+        # print(self.mysql_database_host)
 
 
     def connect_to_user_info_database(self):
