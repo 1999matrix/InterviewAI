@@ -26,11 +26,14 @@ def start_test():
         # Create an instance of QuestionFetcher with the extracted parameters
         question_id_fetcher_instance = QuestionFetcher(username, topic, level)
         question_id = question_id_fetcher_instance.fetch_questions()
+    
+        if question_id is not None:
+            return jsonify({'question': str(question_id)})
+        else:
+            return jsonify({'message': 'No question assigned to user'}), 404
 
-        return str(question_id)
     except Exception as e:
         return str(e), 500
-
 
 
 
