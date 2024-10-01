@@ -1,6 +1,6 @@
 import mysql.connector
 from src.utils import connect_to_user_db
-from src.component.result import ResponseFetcher
+from src.component.response_checker import ResponseFetcher
 import threading 
 from src.component.text_to_db import TextAppender
 from src.utils import fetch_question
