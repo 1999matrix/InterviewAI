@@ -1,0 +1,8 @@
+pandas
+numpy
+python-dotenv
+psycopg2
+SpeechRecognition
+pyaudio
+requests
+Flask

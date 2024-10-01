@@ -1,5 +1,6 @@
 import requests
 
+
 # Define the URL of the API endpoint
 url = 'http://localhost:7777/api/v1/get_next_question_id'
 
@@ -8,6 +9,7 @@ params = {'username': 'example_user',
           'topic':'Python_db',
           'level':'low',
           'text':'python is a high level interpreter language'}
+
 
 # Send a GET request to the API endpoint
 response = requests.get(url, params=params)
