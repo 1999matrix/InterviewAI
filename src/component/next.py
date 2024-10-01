@@ -6,7 +6,6 @@ from src.component.text_to_db import TextAppender
 from src.utils import fetch_question
 
 
-
 class QuestionManager(TextAppender):
     def __init__(self):
         super().__init__()
