@@ -85,11 +85,16 @@ class QuestionFetcher:
 
                 # Check if username already exists in user_test_info
                 user_cursor.execute("SELECT * FROM user_test_info WHERE username = %s", (self.username,))
-                if not user_cursor.fetchall():
-                    # Insert a new row into user_test_info
-                    user_cursor.execute("INSERT INTO user_test_info (username, q_id, response, result) VALUES (%s, %s, '', '')",
-                                   (self.username, ','.join(questions_ids)))
-                    print("query ready to create user")
+                if user_cursor.fetchall():
+                    # If the username exists, delete the existing record
+                    user_cursor.execute("DELETE FROM user_test_info WHERE username = %s", (self.username,))
+                    # print("Existing record deleted.")
+
+                # Insert a new row into user_test_info
+                user_cursor.execute("INSERT INTO user_test_info (username, q_id, response, result) VALUES (%s, %s, '', '')",
+                            (self.username, ','.join(questions_ids)))
+                # print("New record created for user.")
+
 
                 # Commit the transaction
                 self._question_connection.commit()
