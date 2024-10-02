@@ -8,7 +8,7 @@ from src.component.voice_decryption import WavToTextConverter
 from src.component.start_test import QuestionFetcher
 from src.component.next import QuestionManager
 from src.component.text_to_db import TextAppender
-
+from src.component.result import UserResponseFetcher  
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -108,6 +108,25 @@ def append_text():
     
     except Exception as e:
         return str(e), 500
+
+
+
+@app.route('/api/v1/get_user_responses', methods=['GET'])
+def get_user_responses_api():
+    fetcher = UserResponseFetcher()
+
+    username = request.args.get('username')
+    
+    if not username:
+        return jsonify({"error": "Username parameter is missing"}), 400
+
+    response_result = fetcher.get_user_responses(username)
+    
+    if response_result is None:
+        return jsonify({"error": f"No data found for username: {username}"}), 404
+
+    return jsonify({"response_result": response_result}), 200
+
 
 
 
