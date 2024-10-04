@@ -20,3 +20,4 @@ def test_get_user_responses_api(username):
 # Test the API with a username
 test_username = "example_user"
 test_get_user_responses_api(test_username)
+

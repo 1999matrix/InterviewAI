@@ -1,6 +1,5 @@
 import requests
 
-
 # Define the URL of the API endpoint
 url = 'http://localhost:7777/api/v1/get_next_question_id'
 
@@ -21,3 +20,5 @@ if response.status_code == 200:
 else:
     # Print an error message if the request was not successful
     print(f"Error: {response.status_code} - {response.json()['error']}")
+
+
