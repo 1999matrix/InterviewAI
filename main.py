@@ -116,11 +116,13 @@ def get_user_responses_api():
     fetcher = UserResponseFetcher()
 
     username = request.args.get('username')
+    topic = request.args.get('topic')
+    level = request.args.get('level')
     
     if not username:
         return jsonify({"error": "Username parameter is missing"}), 400
 
-    response_result = fetcher.get_user_responses(username)
+    response_result = fetcher.get_user_responses(username,topic,level)
     
     if response_result is None:
         return jsonify({"error": f"No data found for username: {username}"}), 404

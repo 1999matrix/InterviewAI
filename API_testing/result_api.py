@@ -1,8 +1,8 @@
 import requests
 
-def test_get_user_responses_api(username):
+def test_get_user_responses_api(username,topic,level):
     url = "http://127.0.0.1:7777/api/v1/get_user_responses"  # Replace with your API URL if it's different
-    params = {"username": username}
+    params = {"username": username,"topic":topic,"level":level}
     
     try:
         response = requests.get(url, params=params)
@@ -19,5 +19,8 @@ def test_get_user_responses_api(username):
 
 # Test the API with a username
 test_username = "example_user"
-test_get_user_responses_api(test_username)
+topic = "python_db"
+level = "low"
+
+test_get_user_responses_api(test_username,topic,level)
 
