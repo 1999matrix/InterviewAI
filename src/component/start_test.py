@@ -67,13 +67,13 @@ class QuestionFetcher:
                 # Fetch questions based on topic and level
                 if self.level == "low":
                     first_id_question_table = "level_low"
-                    query = ("SELECT id FROM level_low ORDER BY RAND() LIMIT 5")
+                    query = ("SELECT id FROM level_low ORDER BY RAND() LIMIT 2")
                 elif self.level == "medium":
                     first_id_question_table = "level_medium"
                     query = ("SELECT id FROM first_id_question_table ORDER BY RAND() LIMIT 4")
                 elif self.level == "advance":
                     first_id_question_table = "level_high"
-                    query = ("SELECT id FROM level_high ORDER BY RAND() LIMIT 3")
+                    query = ("SELECT id FROM level_high ORDER BY RAND() LIMIT 6")
                 else:
                     print("Invalid topic or level")
                     return None
