@@ -84,9 +84,10 @@ def get_next_question():
     next_question_id = question_manager.get_next_question_id(username, topic, level)
 
     if next_question_id is not None:
-        return jsonify({'next_question_id': next_question_id})
+        return jsonify({'next_question_id': next_question_id}), 200
     else:
-        return jsonify({'message': 'No more questions left for this user'}), 404
+        # Return a message with status code 200 if no more questions remain
+        return jsonify({'message': 'No more questions left for this user'}), 200
 
 
 
