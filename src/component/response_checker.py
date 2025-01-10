@@ -4,6 +4,7 @@ import json
 from src.utils import connect_to_user_db
 from src.utils import connect_to_question_db
 import psycopg2
+from src.model.local_model import llm_model 
 
 class ResponseFetcher:
     def __init__(self):
@@ -46,50 +47,36 @@ class ResponseFetcher:
         if self.question is None or self.response is None:
             return
 
-        url = 'http://localhost:11434/api/generate'
-        data = {
-            "model": "llama3",
-            "prompt": f"Given the following question and response, provide the following three pieces of information: 1) Correctness: Indicate whether the response is correct, partially correct, or incorrect. 2) Explanation: If the response is incorrect or partially correct, provide the correct explanation. 3) Conclusion: Summarize the accuracy of the response and suggest any improvements if necessary. Question: '{self.question}?' Response: '{self.response}'"
-        }
+        generated_response = llm_model(self.question,self.response)
 
-        response = requests.post(url, json=data)
+        try:
+            conn = connect_to_user_db()  # Assuming this method returns a database connection
+            cursor = conn.cursor()
 
-        if response.status_code == 200:
-            generated_response = ""
-            response_content = response.text.split('\n')
-            for json_str in response_content:
-                if json_str:
-                    json_obj = json.loads(json_str)
-                    generated_response += json_obj['response']
+            # Fetch existing value from result column
+            fetch_query = "SELECT result FROM user_test_info WHERE username = %s"
+            cursor.execute(fetch_query, (username,))
+            existing_result = cursor.fetchone()
 
-            try:
-                conn = connect_to_user_db()  # Assuming this method returns a database connection
-                cursor = conn.cursor()
+            if existing_result and existing_result[0]:
+                # Append the new result with a special "@" separator
+                updated_result = existing_result[0] + "@" + generated_response
+            else:
+                # If no previous result, just use the new response
+                updated_result = generated_response
 
-                # Fetch existing value from result column
-                fetch_query = "SELECT result FROM user_test_info WHERE username = %s"
-                cursor.execute(fetch_query, (username,))
-                existing_result = cursor.fetchone()
+            # Update the result column with the appended value
+            update_query = "UPDATE user_test_info SET result = %s WHERE username = %s"
+            cursor.execute(update_query, (updated_result, username))
+            conn.commit()
 
-                if existing_result and existing_result[0]:
-                    # Append the new result with a special "@" separator
-                    updated_result = existing_result[0] + "@" + generated_response
-                else:
-                    # If no previous result, just use the new response
-                    updated_result = generated_response
+            cursor.close()
+            conn.close()
 
-                # Update the result column with the appended value
-                update_query = "UPDATE user_test_info SET result = %s WHERE username = %s"
-                cursor.execute(update_query, (updated_result, username))
-                conn.commit()
+        except (Exception, psycopg2.Error) as error:
+            print("Error while connecting to PostgreSQL or executing query:", error)
 
-                cursor.close()
-                conn.close()
-
-            except (Exception, psycopg2.Error) as error:
-                print("Error while connecting to PostgreSQL or executing query:", error)
-
-            return generated_response
+        return generated_response
 
 # # Example usage:
 # username = "example_user"
