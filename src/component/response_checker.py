@@ -5,6 +5,7 @@ from src.utils import connect_to_user_db
 from src.utils import connect_to_question_db
 import psycopg2
 from src.model.local_model import llm_model 
+# from src.model.OpenAI import llm_model
 
 class ResponseFetcher:
     def __init__(self):
