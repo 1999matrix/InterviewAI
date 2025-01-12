@@ -1,15 +1,19 @@
 import mysql.connector
 from src.utils import connect_to_user_db
-from src.component.response_checker import ResponseFetcher
+from src.component.comp1.response_checker import ResponseFetcher
 import threading 
-from src.component.text_to_db import TextAppender
+from src.component.comp1.text_to_db import TextAppender
 from src.utils import fetch_question
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class QuestionManager(TextAppender):
     def __init__(self):
         super().__init__()
         self.connection = None
+        self.user_session_table_1 = os.getenv("user_session_table_1")
 
     def text_db(self, username, text):
         self.append_text(username, text)
@@ -46,7 +50,7 @@ class QuestionManager(TextAppender):
             thread.start()
             
             # Check if the username exists in the table
-            cursor.execute("SELECT response_count, q_id FROM user_test_info WHERE username = %s", (username,))
+            cursor.execute(f"SELECT response_count, q_id FROM {self.user_session_table_1} WHERE username = %s", (username,))
             user_row = cursor.fetchone()
 
             if user_row:  # If username exists

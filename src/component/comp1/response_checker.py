@@ -4,15 +4,21 @@ import json
 from src.utils import connect_to_user_db
 from src.utils import connect_to_question_db
 import psycopg2
+from dotenv import load_dotenv
+import os
 # from src.model.local_model import llm_model 
 # from src.model.OpenAI import llm_model
 from src.model.groq import llm_model
+
+
+load_dotenv()
+
 
 class ResponseFetcher:
     def __init__(self):
         self.question = None
         self.response = None
-
+        self.user_session_table_1 = os.getenv("user_session_table_1")
     def fetch_q_id_and_response(self, username, topic, level):
         try:
             connection = connect_to_user_db()
@@ -20,7 +26,7 @@ class ResponseFetcher:
             if connection:
                 cursor = connection.cursor()
                 question_table_cursor = question_table_connection.cursor()
-                query = "SELECT q_id, response, response_count FROM user_test_info WHERE username = %s"
+                query = f"SELECT q_id, response, response_count FROM {self.user_session_table_1} WHERE username = %s"
                 cursor.execute(query, (username,))
                 result = cursor.fetchone()
                 if result:
@@ -56,7 +62,7 @@ class ResponseFetcher:
             cursor = conn.cursor()
 
             # Fetch existing value from result column
-            fetch_query = "SELECT result FROM user_test_info WHERE username = %s"
+            fetch_query = f"SELECT result FROM {self.user_session_table_1} WHERE username = %s"
             cursor.execute(fetch_query, (username,))
             existing_result = cursor.fetchone()
 
@@ -68,7 +74,7 @@ class ResponseFetcher:
                 updated_result = generated_response
 
             # Update the result column with the appended value
-            update_query = "UPDATE user_test_info SET result = %s WHERE username = %s"
+            update_query = f"UPDATE {self.user_session_table_1} SET result = %s WHERE username = %s"
             cursor.execute(update_query, (updated_result, username))
             conn.commit()
 

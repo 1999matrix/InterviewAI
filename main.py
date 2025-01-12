@@ -4,11 +4,11 @@ import time
 from datetime import datetime, timedelta
 from flask import Flask, jsonify, request
 import os
-from src.component.voice_decryption import WavToTextConverter
-from src.component.start_test import QuestionFetcher
-from src.component.next import QuestionManager
-from src.component.text_to_db import TextAppender
-from src.component.result import UserResponseFetcher  
+from src.component.comp1.voice_decryption import WavToTextConverter
+from src.component.comp1.start_test import QuestionFetcher
+from src.component.comp1.next import QuestionManager
+from src.component.comp1.text_to_db import TextAppender
+from src.component.comp1.result import UserResponseFetcher  
 from dotenv import load_dotenv
 
 load_dotenv()

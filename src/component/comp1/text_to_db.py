@@ -1,13 +1,16 @@
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from src.utils import connect_to_user_db 
+import os
 
 load_dotenv()
 
 app = Flask(__name__)
 
 class TextAppender:
-    
+    def __init__(self):
+        self.user_session_table_1 = os.getenv("user_session_table_1")
+
     def append_text(self, username, text):
         # Connect to the database
         db_connection = connect_to_user_db()
@@ -15,8 +18,8 @@ class TextAppender:
             cursor = db_connection.cursor()
             print("going to send data in table2")
             # Construct the SQL query
-            sql_query = """
-                        UPDATE user_test_info 
+            sql_query = f"""
+                        UPDATE {self.user_session_table_1} 
                         SET 
                             response = CONCAT_WS(',', IF(response='', NULL, response), %s),
                             response_count = IF(response_count IS NULL, 1, response_count + 1)
@@ -31,7 +34,7 @@ class TextAppender:
                 print("cursor is ready")
                 # Commit the changes
                 db_connection.commit()
-                print("send data to user_test_info successfully")
+                print(f"send data to {self.user_session_table_1} successfully")
                 return "Data appended successfully"
             except Exception as e:
                 print("Error occurred while executing SQL query:", e)

@@ -10,18 +10,15 @@ class QuestionFetcher:
         load_dotenv()
         self.username = username
         self.topic = topic
+        
         self.level = level
         self._question_connection = None
         self._user_info_connection = None
-        self.user_test_info_db = os.getenv("user_test_info_db")
+        self.user_session_database = os.getenv("user_session_database")
         self.mysql_database_password = os.getenv("mysql_database_password")
         self.mysql_database_user = os.getenv("mysql_database_user")
         self.mysql_database_host = os.getenv("mysql_database_host")
-        # print(self.mysql_database_password)
-        # print(self.user_test_info_db)
-        # print(self.mysql_database_user)
-        # print(self.mysql_database_host)
-
+        self.user_session_table_1 = os.getenv("user_session_table_1")
 
     def connect_to_user_info_database(self):
         try:
@@ -29,7 +26,7 @@ class QuestionFetcher:
                 host=self.mysql_database_host,
                 user=self.mysql_database_user,
                 password=self.mysql_database_password,
-                database= self.user_test_info_db
+                database= self.user_session_database
             )
             if self._user_info_connection.is_connected():
                 print("Connected to User Info MySQL Server")
@@ -70,7 +67,7 @@ class QuestionFetcher:
                     query = ("SELECT id FROM level_low ORDER BY RAND() LIMIT 2")
                 elif self.level == "medium":
                     first_id_question_table = "level_medium"
-                    query = ("SELECT id FROM first_id_question_table ORDER BY RAND() LIMIT 4")
+                    query = ("SELECT id FROM level_medium ORDER BY RAND() LIMIT 4")
                 elif self.level == "advance":
                     first_id_question_table = "level_high"
                     query = ("SELECT id FROM level_high ORDER BY RAND() LIMIT 6")
@@ -83,15 +80,15 @@ class QuestionFetcher:
                 first_id = questions_ids[0] if questions_ids else None
 
 
-                # Check if username already exists in user_test_info
-                user_cursor.execute("SELECT * FROM user_test_info WHERE username = %s", (self.username,))
+                # Check if username already exists in user_session_table_1
+                user_cursor.execute(f"SELECT * FROM {self.user_session_table_1} WHERE username = %s", (self.username,))
                 if user_cursor.fetchall():
                     # If the username exists, delete the existing record
-                    user_cursor.execute("DELETE FROM user_test_info WHERE username = %s", (self.username,))
+                    user_cursor.execute(f"DELETE FROM {self.user_session_table_1} WHERE username = %s", (self.username,))
                     # print("Existing record deleted.")
 
-                # Insert a new row into user_test_info
-                user_cursor.execute("INSERT INTO user_test_info (username, q_id, response, result) VALUES (%s, %s, '', '')",
+                # Insert a new row into user_session_table_1
+                user_cursor.execute(f"INSERT INTO {self.user_session_table_1} (username, q_id, response, result) VALUES (%s, %s, '', '')",
                             (self.username, ','.join(questions_ids)))
                 # print("New record created for user.")
 

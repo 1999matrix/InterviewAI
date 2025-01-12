@@ -28,7 +28,7 @@ def connect_to_user_db():
             host=os.getenv("mysql_database_host"),
             user=os.getenv("mysql_database_user"),
             password=os.getenv("mysql_database_password"),
-            database=os.getenv("user_test_info_db")
+            database=os.getenv("user_session_database")
         )
         if connection.is_connected():
             pass
