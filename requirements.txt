@@ -6,3 +6,4 @@ SpeechRecognition
 pyaudio
 requests
 Flask
+openpyxl
