@@ -5,46 +5,6 @@ import os
 
 load_dotenv()
 
-
-
-
-def python_table_creation():
-    try:
-        connection = mysql.connector.connect(
-            host=os.getenv("mysql_database_host"),
-            user=os.getenv("mysql_database_user"),
-            password=os.getenv("mysql_database_password"),
-            database=os.getenv("Python_db")
-        )
-
-        if connection.is_connected():
-            print("Connected to MySQL Server")
-            cursor = connection.cursor()
-
-            # Create the table
-            create_table_query = """
-            CREATE TABLE IF NOT EXISTS level_low (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                question VARCHAR(255)
-            )
-            """
-            cursor.execute(create_table_query)
-            print("Table created successfully")
-
-            # Commit the transaction
-            connection.commit()
-
-            # Close cursor and connection
-            cursor.close()
-            connection.close()
-            print("Connection closed")
-
-    except mysql.connector.Error as error:
-        print("Error:", error)
-
-
-
-
 def create_database(database_name):
     try:
         # Establish a connection to MySQL server
