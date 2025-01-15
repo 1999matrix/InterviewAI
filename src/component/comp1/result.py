@@ -1,7 +1,7 @@
 import time
 import mysql.connector
 import os
-from src.utils import connect_to_user_db
+from src.utils import connect_to_db
 from src.utils import fetch_question
 from dotenv import load_dotenv
 import os
@@ -10,29 +10,18 @@ load_dotenv()
 
 class UserResponseFetcher:
     def __init__(self):
-        self.connection = connect_to_user_db()
+        self.connection = connect_to_db()
         self.user_session_table_1 = os.getenv("user_session_table_1")
+        self.question_table_name = os.getenv("question_table_name")
 
     def refresh_connection(self):
         if self.connection.is_connected():
             self.connection.close()
-        self.connection = connect_to_user_db()
+        self.connection = connect_to_db()
 
-    def get_user_responses(self, username, topic, level):
+    def get_user_responses(self, username):
         if self.connection is None:
             return None
-
-        try:
-            if level == "low":
-                level = "level_low"
-            elif level == "medium":
-                level = "level_medium"
-            elif level == "advance":
-                level = "level_high"
-            else:
-                return {"error": "Invalid topic or level"}
-        except Exception as e:
-            return {"error": f"Error: {e}"}
 
         start_time = time.time()  # Start the timeout timer
         timeout_duration = 120  # 2 minutes timeout
@@ -55,9 +44,9 @@ class UserResponseFetcher:
 
                 q_id_list = user_data['q_id'].split(',')
                 response_list = user_data['response'].split(',')
-                result_list = user_data['result'].split('@')
+                result_list = user_data['result'].split('@-@-@')
 
-                question_list = [fetch_question(topic, level, q_id) for q_id in q_id_list]
+                question_list = [fetch_question(self.question_table_name, q_id) for q_id in q_id_list]
 
                 if len(question_list) == len(response_list) == len(result_list):
                     break

@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
-from src.utils import connect_to_user_db 
+from src.utils import connect_to_db 
 import os
 
 load_dotenv()
@@ -13,7 +13,7 @@ class TextAppender:
 
     def append_text(self, username, text):
         # Connect to the database
-        db_connection = connect_to_user_db()
+        db_connection = connect_to_db()
         if db_connection:
             cursor = db_connection.cursor()
             print("going to send data in table2")

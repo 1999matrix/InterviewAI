@@ -4,7 +4,6 @@ import time
 from datetime import datetime, timedelta
 from flask import Flask, jsonify, request
 import os
-from src.component.comp1.voice_decryption import WavToTextConverter
 from src.component.comp1.start_test import QuestionFetcher
 from src.component.comp1.next import QuestionManager
 from src.component.comp1.text_to_db import TextAppender
@@ -37,43 +36,12 @@ def start_test():
 
 
 
-@app.route("/api/v1/voice_decode", methods=["POST"])
-def decode_audio():
-    try:
-        # Check if the 'wav_file' key exists in the request files
-        if 'wav_file' not in request.files:
-            return jsonify({"error": "No file part"}), 400
-
-        # Get the file from the request
-        file = request.files['wav_file']
-
-        # Check if the file is empty
-        if file.filename == '':
-            return jsonify({"error": "No selected file"}), 400
-
-        # Get username from the request
-        username = request.form.get("username")
-
-        # Get file path from the request
-        file_path = request.form.get("file_path")
-
-
-        WavToTextConverter_instance = WavToTextConverter()
-        result = WavToTextConverter_instance.convert(username,file_path)
-
-
-        return jsonify({"result": result})
-    
-    except Exception as e:
-        return str(e), 500
-
-
 
 @app.route('/api/v1/get_next_question_id', methods=['GET'])
 def get_next_question():
     username = request.args.get('username')
-    topic = request.args.get('topic')
-    level = request.args.get('level')
+    # topic = request.args.get('topic')
+    # level = request.args.get('level')
     text = request.args.get('text')
 
     if not username:
@@ -81,7 +49,7 @@ def get_next_question():
 
     question_manager = QuestionManager()
     question_manager.text_db(username, text)  # Corrected method call
-    next_question_id = question_manager.get_next_question_id(username, topic, level)
+    next_question_id = question_manager.get_next_question_id(username)
 
     if next_question_id is not None:
         return jsonify({'next_question_id': next_question_id}), 200
@@ -117,13 +85,11 @@ def get_user_responses_api():
     fetcher = UserResponseFetcher()
 
     username = request.args.get('username')
-    topic = request.args.get('topic')
-    level = request.args.get('level')
     
     if not username:
         return jsonify({"error": "Username parameter is missing"}), 400
 
-    response_result = fetcher.get_user_responses(username,topic,level)
+    response_result = fetcher.get_user_responses(username)
     
     if response_result is None:
         return jsonify({"error": f"No data found for username: {username}"}), 404

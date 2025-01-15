@@ -10,100 +10,86 @@ class QuestionFetcher:
         load_dotenv()
         self.username = username
         self.topic = topic
-        
         self.level = level
-        self._question_connection = None
-        self._user_info_connection = None
-        self.user_session_database = os.getenv("user_session_database")
+        self._db_connection = None  # Single connection for the database
+        self.user_session_database = os.getenv("database_uq")
         self.mysql_database_password = os.getenv("mysql_database_password")
         self.mysql_database_user = os.getenv("mysql_database_user")
         self.mysql_database_host = os.getenv("mysql_database_host")
         self.user_session_table_1 = os.getenv("user_session_table_1")
+        self.database_uq = os.getenv("database_uq")
+        self.question_table_name = os.getenv("question_table_name")
 
-    def connect_to_user_info_database(self):
+    def connect_to_database(self):
+        """Connect to the MySQL database."""
         try:
-            self._user_info_connection = mysql.connector.connect(
+            self._db_connection = mysql.connector.connect(
                 host=self.mysql_database_host,
                 user=self.mysql_database_user,
                 password=self.mysql_database_password,
-                database= self.user_session_database
+                database=self.database_uq
             )
-            if self._user_info_connection.is_connected():
-                print("Connected to User Info MySQL Server")
+            if self._db_connection.is_connected():
+                print("Connected to MySQL Server")
         except mysql.connector.Error as error:
-            print("Error connecting to User Info Database:", error)
+            print("Error connecting to the database:", error)
 
-    def connect_to_question_database(self):
-        try:
-            self._question_connection = mysql.connector.connect(
-                host=self.mysql_database_host,
-                user=self.mysql_database_user,
-                password=self.mysql_database_password,
-                database=self.topic
-            )
-            if self._question_connection.is_connected():
-                print("Connected to Question MySQL Server")
-        except mysql.connector.Error as error:
-            print("Error connecting to Question Database:", error)
-
-    def close_connections(self):
-        if self._question_connection:
-            self._question_connection.close()
-            print("Question Connection Closed.")
-        if self._user_info_connection:
-            self._user_info_connection.close()
-            print("User Info Connection Closed.")
+    def close_connection(self):
+        """Close the database connection."""
+        if self._db_connection:
+            self._db_connection.close()
+            print("Database connection closed.")
 
     def fetch_questions(self):
-        self.connect_to_question_database()
-        self.connect_to_user_info_database()
-        if self._question_connection:
+        """Fetch questions based on topic and level and update the user session table."""
+        self.connect_to_database()
+        if self._db_connection:
             try:
-                cursor = self._question_connection.cursor()
-                user_cursor = self._user_info_connection.cursor()
+                cursor = self._db_connection.cursor()
                 # Fetch questions based on topic and level
                 if self.level == "low":
-                    first_id_question_table = "level_low"
-                    query = ("SELECT id FROM level_low ORDER BY RAND() LIMIT 2")
+                    query = ("SELECT id FROM question_table WHERE Topic = %s AND level = 'Low' ORDER BY RAND() LIMIT 2")
                 elif self.level == "medium":
-                    first_id_question_table = "level_medium"
-                    query = ("SELECT id FROM level_medium ORDER BY RAND() LIMIT 4")
+                    query = ("SELECT id FROM question_table WHERE Topic = %s AND level = 'Medium' ORDER BY RAND() LIMIT 4")
                 elif self.level == "advance":
-                    first_id_question_table = "level_high"
-                    query = ("SELECT id FROM level_high ORDER BY RAND() LIMIT 6")
+                    query = ("SELECT id FROM question_table WHERE Topic = %s AND level = 'High' ORDER BY RAND() LIMIT 6")
                 else:
                     print("Invalid topic or level")
                     return None
 
-                cursor.execute(query)
+                # Execute query to fetch question IDs
+                cursor.execute(query, (self.topic,))
                 questions_ids = [str(row[0]) for row in cursor.fetchall()]
                 first_id = questions_ids[0] if questions_ids else None
+                # print(questions_ids)
 
-
-                # Check if username already exists in user_session_table_1
-                user_cursor.execute(f"SELECT * FROM {self.user_session_table_1} WHERE username = %s", (self.username,))
-                if user_cursor.fetchall():
+                # Check if the username already exists in the session table
+                cursor.execute(f"SELECT * FROM {self.user_session_table_1} WHERE username = %s", (self.username,))
+                if cursor.fetchall():
                     # If the username exists, delete the existing record
-                    user_cursor.execute(f"DELETE FROM {self.user_session_table_1} WHERE username = %s", (self.username,))
-                    # print("Existing record deleted.")
+                    cursor.execute(f"DELETE FROM {self.user_session_table_1} WHERE username = %s", (self.username,))
+                    print("Existing record deleted.")
 
-                # Insert a new row into user_session_table_1
-                user_cursor.execute(f"INSERT INTO {self.user_session_table_1} (username, q_id, response, result) VALUES (%s, %s, '', '')",
-                            (self.username, ','.join(questions_ids)))
+                # Insert a new row into the session table
+                cursor.execute(
+                    f"INSERT INTO {self.user_session_table_1} (username, q_id, response, result) VALUES (%s, %s, '', '')",
+                    (self.username, ','.join(questions_ids))
+                )
                 # print("New record created for user.")
 
-
                 # Commit the transaction
-                self._question_connection.commit()
-                self._user_info_connection.commit()
+                self._db_connection.commit()
 
-                question = fetch_question(self.topic,first_id_question_table,first_id)
+                # Fetch the first question
+                question = fetch_question(self.question_table_name, first_id)
                 return question
 
             except mysql.connector.Error as error:
                 print("Error fetching questions:", error)
-            
-        self.close_connections()
+
+        self.close_connection()
+
 
 if __name__ == "__main__":
     pass
+

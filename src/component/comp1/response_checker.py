@@ -1,8 +1,7 @@
 import mysql.connector
 import requests
 import json
-from src.utils import connect_to_user_db
-from src.utils import connect_to_question_db
+from src.utils import connect_to_db
 import psycopg2
 from dotenv import load_dotenv
 import os
@@ -19,10 +18,12 @@ class ResponseFetcher:
         self.question = None
         self.response = None
         self.user_session_table_1 = os.getenv("user_session_table_1")
-    def fetch_q_id_and_response(self, username, topic, level):
+        self.question_table_name = os.getenv("question_table_name")
+        
+    def fetch_q_id_and_response(self, username):
         try:
-            connection = connect_to_user_db()
-            question_table_connection = connect_to_question_db(topic)
+            connection = connect_to_db()
+            question_table_connection = connect_to_db()
             if connection:
                 cursor = connection.cursor()
                 question_table_cursor = question_table_connection.cursor()
@@ -35,7 +36,8 @@ class ResponseFetcher:
                     response_count = result[2]
                     if response_count > 0 and response_count <= len(q_id_list):
                         q_id = q_id_list[response_count - 1]  # response_count as index
-                        question_table_cursor.execute(f"SELECT question FROM {level} WHERE id = %s", (q_id,))
+                        query = "SELECT question FROM {} WHERE id = %s".format(self.question_table_name)
+                        question_table_cursor.execute(query, (q_id,))
                         self.question = question_table_cursor.fetchone()[0]
                         self.response = response_list[response_count - 1]  # response_count as index
                     else:
@@ -58,17 +60,18 @@ class ResponseFetcher:
         generated_response = llm_model(self.question,self.response)
 
         try:
-            conn = connect_to_user_db()  # Assuming this method returns a database connection
+            conn = connect_to_db()  # Assuming this method returns a database connection
             cursor = conn.cursor()
 
             # Fetch existing value from result column
             fetch_query = f"SELECT result FROM {self.user_session_table_1} WHERE username = %s"
+            print(fetch_query)
             cursor.execute(fetch_query, (username,))
             existing_result = cursor.fetchone()
 
             if existing_result and existing_result[0]:
                 # Append the new result with a special "@" separator
-                updated_result = existing_result[0] + "@" + generated_response
+                updated_result = existing_result[0] + "@-@-@" + generated_response
             else:
                 # If no previous result, just use the new response
                 updated_result = generated_response
@@ -86,12 +89,10 @@ class ResponseFetcher:
 
         return generated_response
 
-# # Example usage:
-# username = "example_user"
-# topic = "Python_db"
-# level = "level_low"
-# fetcher = ResponseFetcher()
-# fetcher.fetch_q_id_and_response(username, topic, level)
-# print(fetcher.check_response(username))
+# Example usage:
+username = "example_user"
+fetcher = ResponseFetcher()
+fetcher.fetch_q_id_and_response(username)
+print(fetcher.check_response(username))
 
 

@@ -1,34 +1,10 @@
 import mysql.connector
 from mysql.connector import Error
 from dotenv import load_dotenv
+from src.utils import create_database
 import os
 
 load_dotenv()
-
-def create_database(database_name):
-    try:
-        # Establish a connection to MySQL server
-        connection = mysql.connector.connect(
-            host=os.getenv("mysql_database_host"),
-            user=os.getenv("mysql_database_user"),
-            password=os.getenv("mysql_database_password"),
-        )
-
-        if connection.is_connected():
-            cursor = connection.cursor()
-            # Execute SQL to create a database
-            cursor.execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
-            print(f"Database '{database_name}' created successfully.")
-            cursor.close()
-
-    except Error as e:
-        print(f"Error: {e}")
-    finally:
-        if connection.is_connected():
-            connection.close()
-            print("MySQL connection closed.")
-
-
 
 
 def create_user_test_info_table_1():
@@ -105,8 +81,8 @@ def create_user_test_info_table_2():
         print("Error:", error)
 
 
-
-# Calling the functions to create the table and database
-create_database(os.getenv("user_session_database"))
-create_user_test_info_table_1()
-create_user_test_info_table_2()
+if __name__ == "__main__":
+    # Calling the functions to create the table and database
+    create_database(os.getenv("database_uq"))
+    create_user_test_info_table_1()
+    create_user_test_info_table_2()

@@ -6,8 +6,8 @@ url = 'http://localhost:7777/api/v1/start_test'
 # Define the parameters you want to send
 params = {
     'username': 'example_user',
-    'topic': 'Python_db',
-    'level': 'low'
+    'topic': 'Python',
+    'level': 'medium'
 }
 
 # Send a GET request to the API endpoint

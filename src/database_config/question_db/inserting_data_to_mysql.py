@@ -1,7 +1,7 @@
 import mysql.connector
 import pandas as pd
 from dotenv import load_dotenv
-from src.database_config.user_session.configure_db import create_database
+from src.utils import create_database
 import os
 
 # Load environment variables
@@ -38,7 +38,9 @@ def python_table_creation(table_name):
         create_table_query = f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            question VARCHAR(255)
+            question VARCHAR(255),
+            Topic VARCHAR(255),
+            level VARCHAR(255)
         )
         """
         cursor.execute(create_table_query)
@@ -52,19 +54,23 @@ def python_table_creation(table_name):
         print("Connection closed.")
 
 
+
 def insert_questions_from_excel(question_file_path, table_name):
     """
-    Reads questions from an Excel file and inserts them into the specified MySQL table.
+    Reads questions, topics, and levels from an Excel file and inserts them into the specified MySQL table.
     """
     try:
-        # Load questions from Excel file
+        # Load data from Excel file
         df = pd.read_excel(question_file_path)
 
-        if "Question" not in df.columns:
-            print("Excel file must contain a 'Question' column.")
+        # Ensure required columns exist in the Excel file
+        required_columns = {"Question", "Topic", "Level"}
+        if not required_columns.issubset(df.columns):
+            print(f"Excel file must contain the following columns: {', '.join(required_columns)}")
             return
 
-        questions = df["Question"].dropna().tolist()
+        # Drop rows with missing values in the required columns
+        df = df.dropna(subset=required_columns)
 
         connection = connect_to_database()
         if connection is None:
@@ -73,15 +79,21 @@ def insert_questions_from_excel(question_file_path, table_name):
         try:
             cursor = connection.cursor()
 
-            # Insert questions into table
-            for question in questions:
-                cursor.execute(f"INSERT INTO {table_name} (question) VALUES (%s)", (question,))
-                print(f"Question '{question}' inserted successfully.")
+            # Insert data into the table
+            for _, row in df.iterrows():
+                question = row["Question"]
+                topic = row["Topic"]
+                level = row["Level"]
+                cursor.execute(
+                    f"INSERT INTO {table_name} (question, topic, level) VALUES (%s, %s, %s)",
+                    (question, topic, level),
+                )
+                print(f"Inserted: Question='{question}', Topic='{topic}', Level='{level}'")
 
             connection.commit()
-            print("All questions inserted successfully.")
+            print("All records inserted successfully.")
         except mysql.connector.Error as error:
-            print(f"Error inserting questions: {error}")
+            print(f"Error inserting records: {error}")
         finally:
             cursor.close()
             connection.close()
@@ -92,29 +104,16 @@ def insert_questions_from_excel(question_file_path, table_name):
         print(f"Unexpected error: {e}")
 
 
+
 if __name__ == "__main__":
     # creating database if not exist
-    database_name = os.getenv("Python_db")
+    database_name = os.getenv("database_uq")
     create_database(database_name)
 
     # Define the path to the Excel file and the target table name
-    low_level_question_file_path = "level_low.xlsx"
-    level_low_table_name = "level_low"
-
-    medium_level_question_file_path = "level_medium.xlsx"
-    level_medium_table_name = "level_medium"
-
-    high_level_question_file_path = "level_high.xlsx"
-    level_high_table_name = "level_high"
+    question_file_path = "C:/Users/bhupe/Goal_77/src/database_config/question_db/questions.xlsx"
+    question_table_name = os.getenv("question_table_name")
 
     # Create table and insert questions
-    python_table_creation(level_low_table_name)
-    insert_questions_from_excel(low_level_question_file_path, level_low_table_name)
-
-    # Create table and insert questions
-    python_table_creation(level_medium_table_name)
-    insert_questions_from_excel(medium_level_question_file_path, level_medium_table_name)
-
-    # Create table and insert questions
-    python_table_creation(level_high_table_name)
-    insert_questions_from_excel(low_level_question_file_path, level_high_table_name)
+    python_table_creation(question_table_name)
+    insert_questions_from_excel(question_file_path, question_table_name)
