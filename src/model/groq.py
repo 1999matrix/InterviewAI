@@ -36,3 +36,45 @@ def llm_model(question, response):
     except Exception as e:
         return f"An error occurred: {e}"
 
+
+
+
+def question_generator(text):
+    # Initialize the Groq client with the API key
+    client = Groq(
+        api_key=os.getenv("GROQ_API_KEY")  # Set the API key in your environment variables
+    )
+
+    # Prepare the prompt
+    prompt = f"""
+    Given the following text, provide the information of CV of a user:
+    CV: '{text}'
+    Generate 7 questions based on the CV and experience of the user. Provide:
+    - 3 general questions.
+    - 4 technical questions based on the technologies specified in the text.
+    Return the questions as a list of plain text, with each question as a separate line.
+    """
+
+    try:
+        # Call the Groq API to generate a chat completion
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            model="llama-3.3-70b-versatile"  # Adjust the model if needed
+        )
+
+        # Extract the response
+        response = chat_completion.choices[0].message.content
+
+        # Split the response into a list of questions and filter out unwanted lines
+        questions = [
+            line.strip()
+            for line in response.split("\n")
+            if line.strip() and not line.lower().startswith("here are")
+        ]
+
+        return questions
+
+    except Exception as e:
+        return f"An error occurred: {e}"

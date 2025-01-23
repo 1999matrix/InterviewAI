@@ -5,9 +5,40 @@ import mysql.connector
 from dotenv import load_dotenv
 import os
 from mysql.connector import Error
-
+import fitz  # PyMuPDF
+import io
+import tempfile
 
 load_dotenv()
+
+
+class extract_text_with_pdf:
+    def __init__(self, pdf_data, username):
+        self.pdf_data = pdf_data
+        self.username = username
+
+    def extract_text_with_pymupdf(self):
+        try:
+            # Check if pdf_data is empty or invalid
+            if not self.pdf_data:
+                return "No PDF data available."
+
+            # Save the PDF data to a temporary file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+                temp_file.write(self.pdf_data)
+                temp_pdf_path = temp_file.name  # Store the temp file path
+
+            # Open the saved PDF file using fitz
+            with fitz.open(temp_pdf_path) as doc:
+                text = ""
+                for page in doc:
+                    text += page.get_text()
+
+            # print(f"Extracted text for user: {self.username}")
+            return text
+        except Exception as e:
+            return f"Error while extracting text: {e}"
+
 
 
 def connect_to_db():
@@ -71,3 +102,7 @@ def create_database(database_name):
         if connection.is_connected():
             connection.close()
             print("MySQL connection closed.")
+
+
+
+
