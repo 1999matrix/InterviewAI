@@ -8,7 +8,11 @@ from src.component.comp1.start_test import QuestionFetcher
 from src.component.comp1.next import QuestionManager
 from src.component.comp1.text_to_db import TextAppender
 from src.component.comp1.result import UserResponseFetcher  
+from src.component.comp2.start_test import QuestionFetcherComp2
+from src.component.comp2.result import UserResponseFetcherComp2
+from src.component.comp2.next import QuestionManagerComp2
 from dotenv import load_dotenv
+import pandas as pd
 
 load_dotenv()
 
@@ -61,28 +65,74 @@ def get_next_question():
 
 
 
-@app.route('/api/v1/append_text', methods=['POST'])
-def append_text():
-    try:
-        data = request.json
-        username = data.get('username')
-        text = data.get('text')
-
-        if not username or not text:
-            return jsonify({"error": "Invalid input"}), 400
-        
-        appender = TextAppender()
-        result = appender.append_text(username, text)
-        return jsonify({"result": result})
-    
-    except Exception as e:
-        return str(e), 500
-
-
-
 @app.route('/api/v1/get_user_responses', methods=['GET'])
 def get_user_responses_api():
     fetcher = UserResponseFetcher()
+
+    username = request.args.get('username')
+    
+    if not username:
+        return jsonify({"error": "Username parameter is missing"}), 400
+
+    response_result = fetcher.get_user_responses(username)
+    
+    if response_result is None:
+        return jsonify({"error": f"No data found for username: {username}"}), 404
+
+    return jsonify({"response_result": response_result}), 200
+
+
+
+
+@app.route('/api/v1/start_test_comp2', methods=['POST'])
+def start_test_comp2():
+    data = request.json
+    username = data.get('username')
+    role = data.get('role')
+    job_description = data.get('job_description')
+    experience = data.get('experience')
+    cv_flag = data.get('cv', True)
+
+    QuestionFetcherComp2_instance = QuestionFetcherComp2(username, role, job_description, experience, cv_flag)
+    result = QuestionFetcherComp2_instance.generate_question_from_cv()
+
+    # Insert the questions into the database
+    questions = result['question'].tolist()  # Convert the questions column to a list
+    # print(questions)
+    first_question  = QuestionFetcherComp2_instance.insert_questions_into_db(questions)
+
+    if not username:
+        return jsonify({"error": "Username parameter is missing"}), 400
+    
+    if first_question is None:
+        return jsonify({"error": f"No data found for username: {username}"}), 404
+
+    return jsonify({'question': str(first_question)})
+
+
+
+@app.route('/api/v1/get_next_question_comp2', methods=['GET'])
+def get_next_question_comp2():
+    username = request.args.get('username')
+    text = request.args.get('text')
+
+    if not username:
+        return jsonify({'error': 'Username not provided'}), 400
+
+    question_manager = QuestionManagerComp2()
+    question_manager.text_db(username, text)  # Corrected method call
+    next_question_id = question_manager.get_next_question_id_comp2(username)
+
+    if next_question_id is not None:
+        return jsonify({'next_question_id': next_question_id}), 200
+    else:
+        # Return a message with status code 200 if no more questions remain
+        return jsonify({'message': 'No more questions left for this user'}), 200
+
+
+@app.route('/api/v1/get_user_responses_comp2', methods=['GET'])
+def get_user_responses_api_comp2():
+    fetcher = UserResponseFetcherComp2()
 
     username = request.args.get('username')
     
