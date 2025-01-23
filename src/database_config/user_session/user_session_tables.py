@@ -14,7 +14,7 @@ def create_user_test_info_table_1():
             host=os.getenv("mysql_database_host"),
             user=os.getenv("mysql_database_user"),
             password=os.getenv("mysql_database_password"),
-            database=os.getenv("user_session_database")
+            database=os.getenv("database_uq")
         )
         if connection.is_connected():
             print("Connected to MySQL Server")
@@ -30,7 +30,7 @@ def create_user_test_info_table_1():
             )
             """
             cursor.execute(create_table_query)
-            print("Table 'user_test_info' created successfully")
+            print("Table 'user_session_table_1' created successfully")
 
             connection.commit()
 
@@ -51,7 +51,7 @@ def create_user_test_info_table_2():
             host=os.getenv("mysql_database_host"),
             user=os.getenv("mysql_database_user"),
             password=os.getenv("mysql_database_password"),
-            database=os.getenv("user_session_database")
+            database=os.getenv("database_uq")
         )
         if connection.is_connected():
             print("Connected to MySQL Server")
@@ -60,7 +60,7 @@ def create_user_test_info_table_2():
             create_table_query = f"""
             CREATE TABLE IF NOT EXISTS {user_session_table_2} (
                 username VARCHAR(255),
-                qestion TEXT,
+                question TEXT,
                 response TEXT,
                 result TEXT,
                 response_count INT,
@@ -69,7 +69,7 @@ def create_user_test_info_table_2():
             )
             """
             cursor.execute(create_table_query)
-            print("Table 'user_test_info' created successfully")
+            print("Table 'user_session_table_2' created successfully")
 
             connection.commit()
 
