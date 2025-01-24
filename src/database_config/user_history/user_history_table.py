@@ -13,7 +13,7 @@ def create_user_history_table():
             host=os.getenv("mysql_database_host"),
             user=os.getenv("mysql_database_user"),
             password=os.getenv("mysql_database_password"),
-            database=os.getenv("user_session_database")
+            database=os.getenv("database_uq")
         )
         if connection.is_connected():
             print("Connected to MySQL Server")
