@@ -1,138 +1,12 @@
-# from flask import Flask, request, jsonify
-# from src.utils import connect_to_db, extract_text_with_pdf
-# from src.model.local_model import llm_model
-# from src.model.groq import question_generator
-# import pandas as pd
-
-
-# class QuestionFetcherComp2:
-#     def __init__(self, username, role, job_description, experience, cv):
-#         self.username = username
-#         self.role = role
-#         self.job_description = job_description
-#         self.experience = experience
-#         self.cv = bool(cv)  # Ensure cv is stored as a boolean
-#         self.user_session_table_2 = "user_session_table_2"  # Example table name
-
-#     def generate_question_from_cv(self):
-#         """
-#         Fetches the user's CV from the database, generates questions from it,
-#         and returns a DataFrame of questions.
-#         """
-#         if not self.cv:
-#             return "CV fetching is disabled for this user."
-
-#         connection = connect_to_db()
-#         if connection is None:
-#             return "Failed to connect to the database."
-
-#         try:
-#             cursor = connection.cursor()
-#             query = "SELECT pdf_file FROM user_cv_table WHERE username = %s"
-#             cursor.execute(query, (self.username,))
-#             result = cursor.fetchone()
-
-#             if not result or not result[0]:
-#                 return f"No CV found for username: {self.username}"
-
-#             # Extract the PDF binary data from the database result
-#             pdf_data = result[0]
-
-#             # Extract text from the in-memory PDF
-#             extracted_text = extract_text_with_pdf(pdf_data, self.username)
-#             print(extracted_text)
-#             # Generate questions
-#             questions = question_generator(extracted_text)
-
-#             # Parse questions into a list
-#             if isinstance(questions, str):
-#                 questions = [q.strip("- ").strip() for q in questions.split("\n") if q.strip()]
-
-#             # Create a DataFrame of questions
-#             question_list = [{"question_id": idx + 1, "question": q} for idx, q in enumerate(questions)]
-#             return pd.DataFrame(question_list)
-
-#         except Exception as e:
-#             print(f"An error occurred while fetching CV: {e}")
-#             return f"An error occurred while fetching CV: {e}"
-#         finally:
-#             if connection.is_connected():
-#                 connection.close()
-
-#     def insert_questions_into_db(self, questions):
-#         """
-#         Inserts the questions into the user_session_table_2 table as a single row,
-#         with questions comma-separated and enclosed in triple quotes.
-#         """
-#         connection = connect_to_db()
-#         if connection is None:
-#             return "Failed to connect to the database."
-
-#         formatted_questions = '-@-'.join([f'"""{q}"""' for q in questions])
-
-#         try:
-#             cursor = connection.cursor()
-
-#             # Check if the username already exists in the session table
-#             cursor.execute(f"SELECT * FROM {self.user_session_table_2} WHERE username = %s", (self.username,))
-#             if cursor.fetchone():
-#                 cursor.execute(f"DELETE FROM {self.user_session_table_2} WHERE username = %s", (self.username,))
-#                 print("Existing record deleted.")
-
-#             # Insert the questions into the table
-#             query = f"""
-#                 INSERT INTO {self.user_session_table_2} (username, question, response, result, response_count)
-#                 VALUES (%s, %s, '', '', 0)
-#             """
-#             cursor.execute(query, (self.username, formatted_questions))
-#             connection.commit()
-
-#             print("Questions successfully inserted into the database.")
-#             return questions[0]
-        
-#         except Exception as e:
-#             print(f"An error occurred while inserting questions: {e}")
-#             connection.rollback()
-#         finally:
-#             if connection.is_connected():
-#                 cursor.close()
-#                 connection.close()
-
-
-# if __name__ == "__main__":
-#     # Initialize the QuestionFetcherComp2 class
-#     fetcher = QuestionFetcherComp2(
-#         username="user",
-#         role="Data Scientist",
-#         job_description="Build and deploy machine learning models",
-#         experience=3,
-#         cv=True  # Assuming the user has uploaded a CV
-#     )
-
-#     # Fetch CV and generate questions
-#     questions_df = fetcher.generate_question_from_cv()
-#     if isinstance(questions_df, str):
-#         print(questions_df)
-#     else:
-#         print("Generated Questions:")
-#         print(questions_df)
-
-#         # Insert the questions into the database
-#         questions = questions_df['question'].tolist()
-#         question =  fetcher.insert_questions_into_db(questions)
-#         print(question)
-
-
-
-
-
-
 from src.utils import connect_to_db, extract_text_with_pdf
 from src.model.local_model import llm_model
 from src.model.OpenAI import llm_model
 from src.model.groq import question_generator
 import pandas as pd
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class QuestionFetcherComp2:
     def __init__(self, username, role, job_description, experience, cv):
@@ -141,7 +15,7 @@ class QuestionFetcherComp2:
         self.job_description = job_description
         self.experience = experience
         self.cv = bool(cv)  # Ensure cv is stored as a boolean
-        self.user_session_table_2 = "user_session_table_2"  # Example table name
+        self.user_session_table_2 = os.getenv("user_session_table_2")  # Example table name
 
     def generate_question_from_cv(self):
         """
@@ -200,8 +74,6 @@ class QuestionFetcherComp2:
         if connection is None:
             return "Failed to connect to the database."
 
-        # Format questions into a single string with triple quotes and commas
-        # formatted_questions = ','.join([f'"""{q}"""' for q in questions])
         formatted_questions = '-@-'.join([f'"""{q}"""' for q in questions])
 
 
