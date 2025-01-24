@@ -21,6 +21,7 @@ def create_user_history_table():
 
             create_table_query = f"""
             CREATE TABLE IF NOT EXISTS {user_history_table} (
+                session_id INT AUTO_INCREMENT PRIMARY KEY,
                 record_date DATE,
                 username VARCHAR(255),
                 report TEXT,
