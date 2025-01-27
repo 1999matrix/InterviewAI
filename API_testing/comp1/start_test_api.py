@@ -1,7 +1,7 @@
 import requests
 
 # Define the URL of the API endpoint
-url = 'http://localhost:7777/api/v1/start_test'
+url = 'http://localhost:7777/api/v1/start_test_comp1'
 
 # Define the parameters you want to send
 params = {

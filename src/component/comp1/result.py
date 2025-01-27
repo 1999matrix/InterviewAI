@@ -8,7 +8,7 @@ import os
 
 load_dotenv()
 
-class UserResponseFetcher:
+class UserResultFetcherComp1:
     def __init__(self):
         self.connection = connect_to_db()
         self.user_session_table_1 = os.getenv("user_session_table_1")
@@ -19,7 +19,7 @@ class UserResponseFetcher:
             self.connection.close()
         self.connection = connect_to_db()
 
-    def get_user_responses(self, username):
+    def get_user_result(self, username):
         if self.connection is None:
             return None
 

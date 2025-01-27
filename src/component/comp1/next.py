@@ -1,6 +1,6 @@
 import mysql.connector
 from src.utils import connect_to_db
-from src.component.comp1.response_checker import ResponseFetcher
+from src.component.comp1.response_checker import ResponseFetcherComp1
 import threading 
 from src.component.comp1.text_to_db import TextAppender
 from src.utils import fetch_question
@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-class QuestionManager(TextAppender):
+class QuestionManagerComp1(TextAppender):
     def __init__(self):
         super().__init__()
         self.connection = None
@@ -24,7 +24,7 @@ class QuestionManager(TextAppender):
     def trigger_analysis(self, username):
         try:
             # Triggering result checking process
-            response_fetcher = ResponseFetcher()
+            response_fetcher = ResponseFetcherComp1()
             response_fetcher.fetch_q_id_and_response(username)
             response_fetcher.check_response(username)
         except Exception as e: 

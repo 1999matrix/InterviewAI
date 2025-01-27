@@ -1,7 +1,7 @@
 import requests
 
 def test_get_user_responses_api(username):
-    url = "http://127.0.0.1:7777/api/v1/get_user_responses_comp2"  # Replace with your API URL if it's different
+    url = "http://127.0.0.1:7777/api/v1/get_user_result_comp2"  # Replace with your API URL if it's different
     params = {"username": username}
     
     try:

@@ -1,6 +1,6 @@
 import mysql.connector
 from src.utils import connect_to_db
-from src.component.comp2.response_checker import ResponseFetcher
+from src.component.comp2.response_checker import ResponseFetcherComp2
 import threading 
 from src.component.comp2.text_to_db import TextAppenderComp2
 import os
@@ -22,7 +22,7 @@ class QuestionManagerComp2(TextAppenderComp2):
     def trigger_analysis(self, username):
         try:
             # Triggering result checking process
-            response_fetcher = ResponseFetcher()
+            response_fetcher = ResponseFetcherComp2()
             response_fetcher.fetch_q_id_and_response(username)
             response_fetcher.check_response(username)
             

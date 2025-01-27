@@ -5,11 +5,11 @@ from datetime import datetime, timedelta
 from flask import Flask, jsonify, request
 import os
 from src.component.comp1.start_test import QuestionFetcher
-from src.component.comp1.next import QuestionManager
+from src.component.comp1.next import QuestionManagerComp1
 from src.component.comp1.text_to_db import TextAppender
-from src.component.comp1.result import UserResponseFetcher  
+from src.component.comp1.result import UserResultFetcherComp1  
 from src.component.comp2.start_test import QuestionFetcherComp2
-from src.component.comp2.result import UserResponseFetcherComp2
+from src.component.comp2.result import UserResultFetcherComp2
 from src.component.comp2.next import QuestionManagerComp2
 from dotenv import load_dotenv
 import pandas as pd
@@ -18,8 +18,8 @@ load_dotenv()
 
 app = Flask(__name__)
 
-@app.route("/api/v1/start_test", methods=["GET"])
-def start_test():
+@app.route("/api/v1/start_test_comp1", methods=["GET"])
+def start_test_comp1():
     try:
         # Extract parameters from the URL query string
         username = request.args.get("username")
@@ -41,8 +41,8 @@ def start_test():
 
 
 
-@app.route('/api/v1/get_next_question_id', methods=['GET'])
-def get_next_question():
+@app.route('/api/v1/get_next_question_id_comp1', methods=['GET'])
+def get_next_question_comp1():
     username = request.args.get('username')
     # topic = request.args.get('topic')
     # level = request.args.get('level')
@@ -51,7 +51,7 @@ def get_next_question():
     if not username:
         return jsonify({'error': 'Username not provided'}), 400
 
-    question_manager = QuestionManager()
+    question_manager = QuestionManagerComp1()
     question_manager.text_db(username, text)  # Corrected method call
     next_question_id = question_manager.get_next_question_id(username)
 
@@ -65,16 +65,16 @@ def get_next_question():
 
 
 
-@app.route('/api/v1/get_user_responses', methods=['GET'])
-def get_user_responses_api():
-    fetcher = UserResponseFetcher()
+@app.route('/api/v1/get_user_result_comp1', methods=['GET'])
+def get_user_result_api_comp1():
+    fetcher = UserResultFetcherComp1()
 
     username = request.args.get('username')
     
     if not username:
         return jsonify({"error": "Username parameter is missing"}), 400
 
-    response_result = fetcher.get_user_responses(username)
+    response_result = fetcher.get_user_result(username)
     
     if response_result is None:
         return jsonify({"error": f"No data found for username: {username}"}), 404
@@ -130,16 +130,16 @@ def get_next_question_comp2():
         return jsonify({'message': 'No more questions left for this user'}), 200
 
 
-@app.route('/api/v1/get_user_responses_comp2', methods=['GET'])
-def get_user_responses_api_comp2():
-    fetcher = UserResponseFetcherComp2()
+@app.route('/api/v1/get_user_result_comp2', methods=['GET'])
+def get_user_result_api_comp2():
+    fetcher = UserResultFetcherComp2()
 
     username = request.args.get('username')
     
     if not username:
         return jsonify({"error": "Username parameter is missing"}), 400
 
-    response_result = fetcher.get_user_responses(username)
+    response_result = fetcher.get_user_result(username)
     
     if response_result is None:
         return jsonify({"error": f"No data found for username: {username}"}), 404

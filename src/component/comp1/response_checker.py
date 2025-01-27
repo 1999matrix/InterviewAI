@@ -13,7 +13,7 @@ from src.model.groq import llm_model
 load_dotenv()
 
 
-class ResponseFetcher:
+class ResponseFetcherComp1:
     def __init__(self):
         self.question = None
         self.response = None
@@ -91,7 +91,7 @@ class ResponseFetcher:
 
 # Example usage:
 # username = "example_user"
-# fetcher = ResponseFetcher()
+# fetcher = ResponseFetcherComp1()
 # fetcher.fetch_q_id_and_response(username)
 # print(fetcher.check_response(username))
 
