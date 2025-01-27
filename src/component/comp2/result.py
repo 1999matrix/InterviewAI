@@ -69,10 +69,25 @@ class UserResultFetcherComp2:
             }
             for i in range(len(question_list))
         ]
+        # Prepare the report as a JSON-like string
+        report_data = str(response_result_list)
+
+        try:
+            # Insert the result into user_history_table
+            cursor = self.connection.cursor()
+            insert_query = """
+                INSERT INTO user_history_table (record_date, username, report, percentage)
+                VALUES (NOW(), %s, %s, %s)
+            """
+            cursor.execute(insert_query, (username, report_data, None))  # Percentage is left as NULL for now
+            self.connection.commit()
+        except mysql.connector.Error as error:
+            return {"error": f"Failed to insert into user_history_table: {error}"}
+        finally:
+            if self.connection.is_connected():
+                cursor.close()
 
         return response_result_list
-
-
 
 # if __name__ == "__main__":
 #     fetcher = UserResultFetcherComp2()
