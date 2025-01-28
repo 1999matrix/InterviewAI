@@ -54,3 +54,38 @@ def question_generator(text):
         return questions
 
     return f"An error occurred: {response.status_code} - {response.text}"
+
+
+
+def score_calculator(text):
+    url = 'http://localhost:11434/api/generate'
+    data = {
+        "model": "llama3",
+        "prompt": f"The following text contains a test with questions and responses. "
+                  f"Your task is to assign a score out of 100 based on the content. "
+                  f"Only return the score as a number. Do not include any additional text or strings.\n\n"
+                  f"Text: '{text}'"
+    }
+
+    try:
+        # Send the request to the local LLaMA API
+        response = requests.post(url, json=data)
+
+        if response.status_code == 200:
+            generated_response = ""
+            response_content = response.text.split('\n')
+            for json_str in response_content:
+                if json_str:
+                    json_obj = json.loads(json_str)
+                    generated_response += json_obj['response']
+
+            # Ensure only the numeric score is returned
+            return generated_response.strip()
+
+        else:
+            # Handle non-success HTTP responses
+            return f"An error occurred: {response.status_code} - {response.text}"
+
+    except Exception as e:
+        # Handle any unexpected errors
+        return f"An error occurred: {e}"

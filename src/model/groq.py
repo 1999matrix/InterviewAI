@@ -78,3 +78,30 @@ def question_generator(text):
 
     except Exception as e:
         return f"An error occurred: {e}"
+
+def score_calculator(text):
+    # Initialize the Groq client with the API key
+    client = Groq(
+        api_key=os.getenv("GROQ_API_KEY")  # Set the API key in your environment variables
+    )
+
+    # Prepare the prompt
+    prompt = f"""
+    The following text contains a test with questions and responses. Your task is to assign a score out of 100 based on the content. Only return the score as a number. Do not include any additional text or strings.
+    Text: '{text}'
+    """
+
+    try:
+        # Call the Groq API to generate a chat completion
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            model="llama-3.3-70b-versatile"  # Adjust the model if needed
+        )
+
+        # Extract and return the generated response
+        return chat_completion.choices[0].message.content
+
+    except Exception as e:
+        return f"An error occurred: {e}"

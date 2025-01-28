@@ -4,6 +4,9 @@ import os
 from src.utils import connect_to_db
 from dotenv import load_dotenv
 import os
+from src.model.groq import score_calculator
+# from src.model.OpenAI import score_calculator
+# from src.model.local_model import score_calculator
 
 load_dotenv()
 
@@ -69,6 +72,7 @@ class UserResultFetcherComp2:
         ]
         # Prepare the report as a JSON-like string
         report_data = str(response_result_list)
+        percentage = int(score_calculator(report_data))
 
         try:
             # Insert the result into user_history_table
@@ -77,7 +81,7 @@ class UserResultFetcherComp2:
                 INSERT INTO {self.user_history_table} (record_date, username, report, percentage)
                 VALUES (NOW(), %s, %s, %s)
             """
-            cursor.execute(insert_query, (username, report_data, None))  # Percentage is left as NULL for now
+            cursor.execute(insert_query, (username, report_data, percentage))  # Percentage is left as NULL for now
             self.connection.commit()
 
             # Delete the user record from user_session_table_2
@@ -94,10 +98,10 @@ class UserResultFetcherComp2:
 
         return response_result_list
 
-# if __name__ == "__main__":
-#     fetcher = UserResultFetcherComp2()
+if __name__ == "__main__":
+    fetcher = UserResultFetcherComp2()
 
-#     username = 'user'
-#     response_result = fetcher.get_user_responses(username)
-#     print(response_result)
+    username = 'user'
+    response_result = fetcher.get_user_result(username)
+    print(response_result)
     

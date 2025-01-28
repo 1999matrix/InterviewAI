@@ -83,3 +83,37 @@ def question_generator(text):
 
     except Exception as e:
         return f"An error occurred: {e}"
+    
+
+
+def score_calculator(text):
+    # Load OpenAI API key from the environment variable
+    client = OpenAI(
+        api_key=os.environ.get("OPENAI_API_KEY"),
+    )
+
+    # Construct the prompt
+    prompt = (
+        f"The following text contains a test with questions and responses. "
+        f"Your task is to assign a score out of 100 based on the content. "
+        f"Only return the score as a number. Do not include any additional text or strings.\n\n"
+        f"Text: '{text}'"
+    )
+
+    # Generate the response
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+            model="gpt-4",
+        )
+        # Extract and return the response content
+        response_text = chat_completion.choices[0].message.content.strip()
+        return response_text
+
+    except Exception as e:
+        return f"An error occurred: {e}"

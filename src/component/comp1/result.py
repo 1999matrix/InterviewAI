@@ -4,7 +4,11 @@ import os
 from src.utils import connect_to_db
 from src.utils import fetch_question
 from dotenv import load_dotenv
+from src.model.groq import score_calculator
 import os
+# from src.model.OpenAI import score_calculator
+# from src.model.local_model import score_calculator
+
 
 load_dotenv()
 
@@ -71,6 +75,7 @@ class UserResultFetcherComp1:
         ]
 
         report_data = str(response_result_list)
+        percentage = int(score_calculator(report_data))
 
         try:
             # Insert the result into user_history_table
@@ -79,7 +84,7 @@ class UserResultFetcherComp1:
                 INSERT INTO {self.user_history_table} (record_date, username, report, percentage)
                 VALUES (NOW(), %s, %s, %s)
             """
-            cursor.execute(insert_query, (username, report_data, None))  # Percentage is left as NULL for now
+            cursor.execute(insert_query, (username, report_data, percentage))  # Percentage is left as NULL for now
             self.connection.commit()
 
             # Delete the user record from user_session_table_2
