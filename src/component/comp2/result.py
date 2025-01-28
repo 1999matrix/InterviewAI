@@ -12,7 +12,7 @@ class UserResultFetcherComp2:
     def __init__(self):
         self.connection = connect_to_db()
         self.user_session_table_2 = os.getenv("user_session_table_2")
-        # self.question_table_name = os.getenv("question_table_name")
+        self.user_history_table = os.getenv("user_history_table")
 
     def refresh_connection(self):
         if self.connection.is_connected():
@@ -46,7 +46,6 @@ class UserResultFetcherComp2:
                 response_list = user_data['response'].split(',')
                 result_list = user_data['result'].split('@-@-@')
 
-                # question_list = [fetch_question(self.question_table_name, q_id) for q_id in q_id_list]
 
                 if len(question_list) == len(response_list) == len(result_list):
                     break
@@ -75,8 +74,8 @@ class UserResultFetcherComp2:
         try:
             # Insert the result into user_history_table
             cursor = self.connection.cursor()
-            insert_query = """
-                INSERT INTO user_history_table (record_date, username, report, percentage)
+            insert_query = f"""
+                INSERT INTO {self.user_history_table} (record_date, username, report, percentage)
                 VALUES (NOW(), %s, %s, %s)
             """
             cursor.execute(insert_query, (username, report_data, None))  # Percentage is left as NULL for now
