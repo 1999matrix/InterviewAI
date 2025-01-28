@@ -1,5 +1,8 @@
 from src.utils import connect_to_db, extract_text_with_pdf
 from src.model.groq import question_generator
+from src.model.OpenAI import question_generator
+from src.model.local_model import question_generator
+
 import pandas as pd
 import os
 from dotenv import load_dotenv
