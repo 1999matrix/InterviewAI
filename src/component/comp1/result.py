@@ -80,6 +80,12 @@ class UserResultFetcherComp1:
             """
             cursor.execute(insert_query, (username, report_data, None))  # Percentage is left as NULL for now
             self.connection.commit()
+
+            # Delete the user record from user_session_table_2
+            delete_query = f"DELETE FROM {self.user_session_table_1} WHERE username = %s"
+            cursor.execute(delete_query, (username,))
+            self.connection.commit()
+
         except mysql.connector.Error as error:
             return {"error": f"Failed to insert into user_history_table: {error}"}
         finally:
