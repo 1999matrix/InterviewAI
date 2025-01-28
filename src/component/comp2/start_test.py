@@ -1,6 +1,4 @@
 from src.utils import connect_to_db, extract_text_with_pdf
-from src.model.local_model import llm_model
-from src.model.OpenAI import llm_model
 from src.model.groq import question_generator
 import pandas as pd
 import os

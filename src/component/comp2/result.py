@@ -2,7 +2,6 @@ import time
 import mysql.connector
 import os
 from src.utils import connect_to_db
-from src.utils import fetch_question
 from dotenv import load_dotenv
 import os
 

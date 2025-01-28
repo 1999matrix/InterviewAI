@@ -5,9 +5,9 @@ from src.utils import connect_to_db
 import psycopg2
 from dotenv import load_dotenv
 import os
-# from src.model.local_model import llm_model 
-# from src.model.OpenAI import llm_model
-from src.model.groq import llm_model
+# from src.model.local_model import question_checker 
+# from src.model.OpenAI import question_checker
+from src.model.groq import question_checker
 
 
 load_dotenv()
@@ -57,7 +57,7 @@ class ResponseFetcherComp1:
         if self.question is None or self.response is None:
             return
 
-        generated_response = llm_model(self.question,self.response)
+        generated_response = question_checker(self.question,self.response)
 
         try:
             conn = connect_to_db()  # Assuming this method returns a database connection

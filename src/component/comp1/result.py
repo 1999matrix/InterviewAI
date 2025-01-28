@@ -12,6 +12,7 @@ class UserResultFetcherComp1:
     def __init__(self):
         self.connection = connect_to_db()
         self.user_session_table_1 = os.getenv("user_session_table_1")
+        self.question_table_name = os.getenv("question_table_name")
         self.user_history_table = os.getenv("user_history_table")
     def refresh_connection(self):
         if self.connection.is_connected():

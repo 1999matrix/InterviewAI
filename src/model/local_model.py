@@ -1,7 +1,7 @@
 import requests
 import json
 
-def llm_model(question,response):
+def question_checker(question,response):
     url = 'http://localhost:11434/api/generate'
     data = {
         "model": "llama3",

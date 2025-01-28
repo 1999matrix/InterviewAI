@@ -5,7 +5,7 @@ from openai import OpenAI
 # Load environment variables from a .env file
 load_dotenv()
 
-def llm_model(question, response):
+def question_checker(question, response):
     # Load OpenAI API key from the environment variable
     client = OpenAI(
         api_key=os.environ.get("OPENAI_API_KEY"),

@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def llm_model(question, response):
+def question_checker(question, response):
     # Initialize the Groq client with the API key
     client = Groq(
         api_key=os.getenv("GROQ_API_KEY")  # Set the API key in your environment variables
