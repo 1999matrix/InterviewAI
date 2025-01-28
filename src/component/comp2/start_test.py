@@ -1,7 +1,7 @@
 from src.utils import connect_to_db, extract_text_with_pdf
 from src.model.groq import question_generator
-from src.model.OpenAI import question_generator
-from src.model.local_model import question_generator
+# from src.model.OpenAI import question_generator
+# from src.model.local_model import question_generator
 
 import pandas as pd
 import os
@@ -111,33 +111,33 @@ class QuestionFetcherComp2:
             connection.close()
 
 
-# if __name__ == "__main__":
-#     # Input data for testing
-#     username = 'user'
-#     role = "Data Scientist"
-#     job_description = "Analyze and build machine learning models"
-#     experience = 3
-#     cv_flag = True
+if __name__ == "__main__":
+    # Input data for testing
+    username = 'user'
+    role = "Data Scientist"
+    job_description = "Analyze and build machine learning models"
+    experience = 3
+    cv_flag = True
 
-#     # Instantiate the UserCVFetcher class
-#     user_cv_fetcher = QuestionFetcherComp2(
-#         username=username,
-#         role=role,
-#         job_description=job_description,
-#         experience=experience,
-#         cv=cv_flag
-#     )
+    # Instantiate the UserCVFetcher class
+    user_cv_fetcher = QuestionFetcherComp2(
+        username=username,
+        role=role,
+        job_description=job_description,
+        experience=experience,
+        cv=cv_flag
+    )
 
-#     # Fetch CV and extract questions into a DataFrame
-#     result_df = user_cv_fetcher.generate_question_from_cv()
+    # Fetch CV and extract questions into a DataFrame
+    result_df = user_cv_fetcher.generate_question_from_cv()
 
-#     if isinstance(result_df, pd.DataFrame):
-#         print("\nDataFrame Result:\n")
-#         print(result_df)
+    if isinstance(result_df, pd.DataFrame):
+        print("\nDataFrame Result:\n")
+        print(result_df)
 
-#         # Insert questions into the database
-#         first_question = user_cv_fetcher.insert_questions_into_db(result_df["question"].tolist())
-#         print(first_question)
-#     else:
-#         print("\nError:\n")
-#         print(result_df)
+        # Insert questions into the database
+        first_question = user_cv_fetcher.insert_questions_into_db(result_df["question"].tolist())
+        print(first_question)
+    else:
+        print("\nError:\n")
+        print(result_df)
