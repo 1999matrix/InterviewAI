@@ -98,10 +98,10 @@ class UserResultFetcherComp2:
 
         return response_result_list
 
-if __name__ == "__main__":
-    fetcher = UserResultFetcherComp2()
+# if __name__ == "__main__":
+#     fetcher = UserResultFetcherComp2()
 
-    username = 'user'
-    response_result = fetcher.get_user_result(username)
-    print(response_result)
+#     username = 'user'
+#     response_result = fetcher.get_user_result(username)
+#     print(response_result)
     
