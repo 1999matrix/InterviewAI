@@ -11,6 +11,8 @@ from src.component.comp1.result import UserResultFetcherComp1
 from src.component.comp2.start_test import QuestionFetcherComp2
 from src.component.comp2.result import UserResultFetcherComp2
 from src.component.comp2.next import QuestionManagerComp2
+from src.component.comp2.cv_to_db import UserCVHandler
+
 from dotenv import load_dotenv
 import pandas as pd
 
@@ -145,6 +147,22 @@ def get_user_result_api_comp2():
         return jsonify({"error": f"No data found for username: {username}"}), 404
 
     return jsonify({"response_result": response_result}), 200
+
+
+
+@app.route("/api/v1/upload_cv", methods=["POST"])
+def upload_cv():
+    if "pdf_file" not in request.files or "username" not in request.form:
+        return jsonify({"message": "Username and PDF file are required.", "status": "error"}), 400
+
+    username = request.form["username"]
+    pdf_file = request.files["pdf_file"]
+
+    if pdf_file.filename == "":
+        return jsonify({"message": "No selected file.", "status": "error"}), 400
+
+    response = UserCVHandler.insert_user_cv(username, pdf_file)
+    return jsonify(response), (200 if response["status"] == "success" else 500)
 
 
 
