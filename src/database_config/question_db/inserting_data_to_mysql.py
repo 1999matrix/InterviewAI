@@ -17,7 +17,7 @@ def connect_to_database():
             host=os.getenv("mysql_database_host"),
             user=os.getenv("mysql_database_user"),
             password=os.getenv("mysql_database_password"),
-            database=os.getenv("Python_db")
+            database=os.getenv("database_uq")
         )
         return connection
     except mysql.connector.Error as error:

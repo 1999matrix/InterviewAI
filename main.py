@@ -1,9 +1,4 @@
-import schedule
-import threading
-import time
-from datetime import datetime, timedelta
 from flask import Flask, jsonify, request
-import os
 from src.component.comp1.start_test import QuestionFetcher
 from src.component.comp1.next import QuestionManagerComp1
 from src.component.comp1.text_to_db import TextAppender
@@ -12,9 +7,7 @@ from src.component.comp2.start_test import QuestionFetcherComp2
 from src.component.comp2.result import UserResultFetcherComp2
 from src.component.comp2.next import QuestionManagerComp2
 from src.component.comp2.cv_to_db import UserCVHandler
-
 from dotenv import load_dotenv
-import pandas as pd
 
 load_dotenv()
 
