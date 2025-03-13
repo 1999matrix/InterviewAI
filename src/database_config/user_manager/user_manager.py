@@ -26,7 +26,7 @@ def create_user_history_table():
                 username VARCHAR(255),
                 report TEXT,
                 percentage INT,
-                user_id INT,
+                user_id BIGINT,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
             )
             """
@@ -235,8 +235,8 @@ if __name__ == "__main__":
         create_database(os.getenv("database_uq"))
         
         # Create tables in the correct order (users table must be created first due to foreign key dependencies)
-        create_users_table()
-        create_users_role_table()
+        # create_users_table()
+        # create_users_role_table()
         create_user_history_table()
-        password_reset_tokens_table()
-        email_verification_token_table()
+        # password_reset_tokens_table()
+        # email_verification_token_table()
