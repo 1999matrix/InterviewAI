@@ -8,10 +8,13 @@ from src.component.comp2.result import UserResultFetcherComp2
 from src.component.comp2.next import QuestionManagerComp2
 from src.component.comp2.cv_to_db import UserCVHandler
 from dotenv import load_dotenv
+from flask_cors import CORS
 
 load_dotenv()
 
 app = Flask(__name__)
+CORS(app)
+
 
 @app.route("/api/v1/start_test_comp1", methods=["GET"])
 def start_test_comp1():
