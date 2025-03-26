@@ -6,6 +6,7 @@ from src.model.groq import question_generator
 import pandas as pd
 import os
 from dotenv import load_dotenv
+from flask import jsonify, request
 
 load_dotenv()
 
@@ -23,31 +24,45 @@ class QuestionFetcherComp2:
         Fetches the user's CV from the database, generates questions from it,
         and returns a DataFrame of questions.
         """
+        # Check if CV fetching is disabled
         if not self.cv:
-            return "CV fetching is disabled for this user."
+            raise ValueError("CV fetching is disabled for this user.")
 
+        # Establish database connection
         connection = connect_to_db()
         if connection is None:
-            return "Failed to connect to the database."
+            raise ConnectionError("Failed to connect to the database.")
 
         try:
             cursor = connection.cursor()
+            
+            # Fetch CV based on username
             query = "SELECT pdf_file FROM user_cv_table WHERE username = %s"
             cursor.execute(query, (self.username,))
             result = cursor.fetchone()
 
+            # Check if CV exists
             if result is None or result[0] is None:
-                return f"No CV found for username: {self.username}"
+                # Raise a specific error when no CV is found
+                raise FileNotFoundError(f"No CV found for username: {self.username}")
 
             # Extract the PDF binary data from the database result
             pdf_data = result[0]
 
             # Extract text from the in-memory PDF
             extract_text_instance = extract_text_with_pdf(pdf_data, self.username)
-            extracted_text = extract_text_instance.extract_text_with_pymupdf()
-            # print(extracted_text)
+            extracted_cv_text = extract_text_instance.extract_text_with_pymupdf()
+
+            # Prepare text for question generation
+            mid_prompt = "This is job description if it is not empty string then generate question" \
+            "based on job description as well. \n if not present then ignore this part. \n"
+
+            # Combine CV text with job description
+            extracted_cv_text = extracted_cv_text + mid_prompt + self.job_description
+            print(extracted_cv_text)
+
             # Generate questions
-            questions = question_generator(extracted_text)
+            questions = question_generator(extracted_cv_text)
 
             # Parse questions into a list (ensure it's not a single string)
             if isinstance(questions, str):
@@ -59,11 +74,16 @@ class QuestionFetcherComp2:
 
             return df
 
+        except (FileNotFoundError, ConnectionError) as e:
+            # Re-raise specific errors to be handled by the API
+            raise
         except Exception as e:
+            # Log the error and raise a generic exception
             print(f"An error occurred while fetching CV: {e}")
-            return f"An error occurred while fetching CV: {e}"
+            raise ValueError(f"An error occurred while fetching CV: {e}")
         finally:
-            if connection.is_connected():
+            # Ensure connection is closed
+            if connection and connection.is_connected():
                 connection.close()
 
     def insert_questions_into_db(self, questions):
@@ -71,16 +91,18 @@ class QuestionFetcherComp2:
         Inserts the questions into the user_session_table_2 table as a single row,
         with questions comma-separated and enclosed in triple quotes.
         """
+        # Establish database connection
         connection = connect_to_db()
         if connection is None:
-            return "Failed to connect to the database."
+            raise ConnectionError("Failed to connect to the database.")
 
+        # Format questions
         formatted_questions = '-@-'.join([f'"""{q}"""' for q in questions])
-
 
         try:
             # Create a cursor object
             cursor = connection.cursor()
+
             # Check if the username already exists in the session table
             cursor.execute(f"SELECT * FROM {self.user_session_table_2} WHERE username = %s", (self.username,))
             if cursor.fetchone():
@@ -102,20 +124,22 @@ class QuestionFetcherComp2:
             print("Questions successfully inserted into the database.")
             return questions[0]
         except Exception as e:
+            # Log error and rollback transaction
             print(f"An error occurred while inserting questions: {e}")
             connection.rollback()
-
+            raise ValueError(f"An error occurred while inserting questions: {e}")
         finally:
-            # Close the cursor
-            cursor.close()
-            connection.close()
+            # Close the cursor and connection
+            if connection and connection.is_connected():
+                cursor.close()
+                connection.close()
 
 
 if __name__ == "__main__":
     # Input data for testing
-    username = 'user'
+    username = 't77'
     role = "Data Scientist"
-    job_description = "Analyze and build machine learning models"
+    job_description = "Build and deploy machine learning models"
     experience = 3
     cv_flag = True
 

@@ -82,31 +82,128 @@ def get_user_result_api_comp1():
 
 
 
-@app.route('/api/v1/start_test_comp2', methods=['POST'])
-def start_test_comp2():
-    data = request.json
-    username = data.get('username')
-    role = data.get('role')
-    job_description = data.get('job_description')
-    experience = data.get('experience')
-    cv_flag = data.get('cv', True)
+# @app.route('/api/v1/start_test_comp2', methods=['POST'])
+# def start_test_comp2():
+#     data = request.json
+#     username = data.get('username')
+#     role = data.get('role')
+#     job_description = data.get('job_description')
+#     experience = data.get('experience')
+#     cv_flag = data.get('cv', True)
 
-    QuestionFetcherComp2_instance = QuestionFetcherComp2(username, role, job_description, experience, cv_flag)
-    result = QuestionFetcherComp2_instance.generate_question_from_cv()
+#     QuestionFetcherComp2_instance = QuestionFetcherComp2(username, role, job_description, experience, cv_flag)
+#     result = QuestionFetcherComp2_instance.generate_question_from_cv()
 
-    # Insert the questions into the database
-    questions = result['question'].tolist()  # Convert the questions column to a list
-    # print(questions)
-    first_question  = QuestionFetcherComp2_instance.insert_questions_into_db(questions)
+#     # Insert the questions into the database
+#     questions = result['question'].tolist()  # Convert the questions column to a list
+#     # print(questions)
+#     first_question  = QuestionFetcherComp2_instance.insert_questions_into_db(questions)
 
-    if not username:
-        return jsonify({"error": "Username parameter is missing"}), 400
+#     if not username:
+#         return jsonify({"error": "Username parameter is missing"}), 400
     
-    if first_question is None:
-        return jsonify({"error": f"No data found for username: {username}"}), 404
+#     if first_question is None:
+#         return jsonify({"error": f"No data found for username: {username}"}), 404
 
-    return jsonify({'question': str(first_question)})
+#     return jsonify({'question': str(first_question)})
 
+@app.route('/api/v1/start_test_comp2', methods=['POST'])
+def handle_start_test_comp2():
+    try:
+        # Validate input data
+        data = request.json
+        if not data:
+            return jsonify({"error": "No input data provided"}), 400
+
+        # Extract parameters with validation
+        username = data.get('username')
+        role = data.get('role')
+        job_description = data.get('job_description', '')
+        experience = data.get('experience')
+        cv_flag = data.get('cv', True)
+
+        # Validate required parameters
+        if not username:
+            return jsonify({"error": "Username is required"}), 400
+        
+        if not role:
+            return jsonify({"error": "Role is required"}), 400
+        
+        if experience is None:
+            return jsonify({"error": "Experience is required"}), 400
+
+        # Create QuestionFetcherComp2 instance
+        try:
+            QuestionFetcherComp2_instance = QuestionFetcherComp2(
+                username, role, job_description, experience, cv_flag
+            )
+        except ValueError as ve:
+            return jsonify({"error": str(ve)}), 400
+
+        # Generate questions from CV
+        try:
+            result = QuestionFetcherComp2_instance.generate_question_from_cv()
+        except FileNotFoundError as fnf:
+            return jsonify({
+                "error": str(fnf),
+                "status_code": 404,
+                "message": "CV not found for the given username"
+            }), 404
+        except ConnectionError as ce:
+            return jsonify({
+                "error": str(ce),
+                "status_code": 500,
+                "message": "Database connection error"
+            }), 500
+        except ValueError as ve:
+            return jsonify({
+                "error": str(ve),
+                "status_code": 500,
+                "message": "Error generating questions"
+            }), 500
+        except Exception as e:
+            return jsonify({
+                "error": "An unexpected error occurred while generating questions",
+                "status_code": 500,
+                "message": str(e)
+            }), 500
+
+        # Validate result
+        if result is None or result.empty:
+            return jsonify({
+                "error": "No questions could be generated",
+                "status_code": 404,
+                "message": "Unable to generate questions from CV"
+            }), 404
+
+        # Convert questions to list
+        questions = result['question'].tolist()
+
+        # Insert questions into database
+        try:
+            first_question = QuestionFetcherComp2_instance.insert_questions_into_db(questions)
+        except Exception as e:
+            return jsonify({
+                "error": "Failed to insert questions into database",
+                "status_code": 500,
+                "message": str(e)
+            }), 500
+
+        # Return successful response
+        return jsonify({
+            'status': 'success',
+            'status_code': 200,
+            'question': str(first_question)
+        }), 200
+
+    except Exception as e:
+        # Catch any unexpected errors
+        app.logger.error(f"Unexpected error in start_test_comp2: {e}")
+        return jsonify({
+            "error": "An unexpected server error occurred",
+            "status_code": 500,
+            "message": str(e)
+        }), 500
 
 
 @app.route('/api/v1/get_next_question_comp2', methods=['GET'])
