@@ -20,8 +20,14 @@ def create_user_test_info_table_1():
             print("Connected to MySQL Server")
             cursor = connection.cursor()
 
+            # First drop the table if it exists
+            drop_table_query = f"DROP TABLE IF EXISTS {user_session_table_1}"
+            cursor.execute(drop_table_query)
+            print(f"Table '{user_session_table_1}' dropped if it existed")
+
+            # Then create the table with correct column names
             create_table_query = f"""
-            CREATE TABLE IF NOT EXISTS {user_session_table_1} (
+            CREATE TABLE {user_session_table_1} (
                 username VARCHAR(255),
                 q_id TEXT,
                 response TEXT,
@@ -57,8 +63,14 @@ def create_user_test_info_table_2():
             print("Connected to MySQL Server")
             cursor = connection.cursor()
 
+            # First drop the table if it exists
+            drop_table_query = f"DROP TABLE IF EXISTS {user_session_table_2}"
+            cursor.execute(drop_table_query)
+            print(f"Table '{user_session_table_2}' dropped if it existed")
+
+            # Then create the table with correct column names
             create_table_query = f"""
-            CREATE TABLE IF NOT EXISTS {user_session_table_2} (
+            CREATE TABLE {user_session_table_2} (
                 username VARCHAR(255),
                 question TEXT,
                 response TEXT,
