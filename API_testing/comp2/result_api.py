@@ -18,7 +18,7 @@ def test_get_user_responses_api(username):
         print(f"Request failed: {e}")
 
 # Test the API with a username
-test_username = "user"
+test_username = "t7"
 
 
 test_get_user_responses_api(test_username)

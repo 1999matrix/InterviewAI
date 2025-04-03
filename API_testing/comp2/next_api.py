@@ -4,7 +4,7 @@ import requests
 url = 'http://localhost:7777/api/v1/get_next_question_comp2'
 
 # Define the parameters you want to send
-params = {'username': 'user',
+params = {'username': 't7',
           'text':'python is a high level interpreter language'}
 
 
