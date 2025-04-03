@@ -8,3 +8,5 @@ requests
 Flask
 openpyxl
 PyMuPDF
+mysql-connector-python
+groq
