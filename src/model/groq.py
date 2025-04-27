@@ -40,6 +40,9 @@ def question_checker(question, response):
 
 
 def question_generator(text):
+    total_question_generate = os.getenv("TOTAL_QUESTION_GENERATE")
+    general_question_generate = os.getenv("GENERAL_QUESTION_GENERATE")
+    technical_question_generate = os.getenv("TECHNICAL_QUESTION_GENERATE")
     # Initialize the Groq client with the API key
     client = Groq(
         api_key=os.getenv("GROQ_API_KEY")  # Set the API key in your environment variables
@@ -49,9 +52,9 @@ def question_generator(text):
     prompt = f"""
     Given the following text, provide the information of CV of a user:
     CV: '{text}'
-    Generate 7 questions based on the CV and experience of the user. Provide:
-    - 3 general questions.
-    - 4 technical questions based on the technologies specified in the text.
+    Generate {total_question_generate} questions based on the CV and experience of the user. Provide:
+    - {general_question_generate} general questions.
+    - {technical_question_generate} technical questions based on the technologies specified in the text.
     Return the questions as a list of plain text, with each question as a separate line.
     """
 

@@ -104,5 +104,23 @@ def create_database(database_name):
             print("MySQL connection closed.")
 
 
+def counter_question(previous_question: str, previous_response: str) -> tuple:
+    """
+    Generates a counter question based on the previous question and response.
+    
+    Args:
+        previous_question (str): The question that was asked
+        previous_response (str): The user's response to that question
+        
+    Returns:
+        tuple: (counter_question, index) where counter_question is the generated question
+               and index is the position where it should be inserted
+    """
+    # TODO: Implement actual counter question generation logic
+    # For now, return a simple counter question
+    counter_q = f"Can you elaborate more on your previous response: '{previous_response}'?"
+    return counter_q, 0  # Default index 0, will be updated based on actual position
+
+
 
 

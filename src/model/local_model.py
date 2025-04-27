@@ -23,14 +23,17 @@ def question_checker(question,response):
 
 
 def question_generator(text):
+    total_question_generate = os.getenv("TOTAL_QUESTION_GENERATE")
+    general_question_generate = os.getenv("GENERAL_QUESTION_GENERATE")
+    technical_question_generate = os.getenv("TECHNICAL_QUESTION_GENERATE")
     url = 'http://localhost:11434/api/generate'
     data = {
         "model": "llama3",
         "prompt": f"Given the following text, provide the information of CV of a user: "
                   f"CV: '{text}' "
-                  f"Generate 7 questions based on the CV and experience of the user. Provide: "
-                  f"- 3 general questions. "
-                  f"- 4 technical questions based on the technologies specified in the text. "
+                  f"Generate {total_question_generate} questions based on the CV and experience of the user. Provide: "
+                  f"- {general_question_generate} general questions. "
+                  f"- {technical_question_generate} technical questions based on the technologies specified in the text. "
                   f"Return the questions as a list of plain text, with each question as a separate line."
     }
 

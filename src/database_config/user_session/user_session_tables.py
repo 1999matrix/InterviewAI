@@ -77,7 +77,8 @@ def create_user_test_info_table_2():
                 result TEXT,
                 response_count INT,
                 CV TEXT,
-                JD TEXT
+                JD TEXT,
+                cross_questions_count INT DEFAULT 0
             )
             """
             cursor.execute(create_table_query)

@@ -42,6 +42,9 @@ def question_checker(question, response):
 
 
 def question_generator(text):
+    total_question_generate = os.getenv("TOTAL_QUESTION_GENERATE")
+    general_question_generate = os.getenv("GENERAL_QUESTION_GENERATE")
+    technical_question_generate = os.getenv("TECHNICAL_QUESTION_GENERATE")
     # Load OpenAI API key from the environment variable
     client = OpenAI(
         api_key=os.environ.get("OPENAI_API_KEY"),
@@ -51,9 +54,9 @@ def question_generator(text):
     prompt = (
         f"Given the following text, provide the information of CV of a user:\n"
         f"CV: '{text}'\n"
-        f"Generate 7 questions based on the CV and experience of the user. Provide:\n"
-        f"- 3 general questions.\n"
-        f"- 4 technical questions based on the technologies specified in the text.\n"
+        f"Generate {total_question_generate} questions based on the CV and experience of the user. Provide:\n"
+        f"- {general_question_generate} general questions.\n"
+        f"- {technical_question_generate} technical questions based on the technologies specified in the text.\n"
         f"Return the questions as a list of plain text, with each question as a separate line."
     )
 
