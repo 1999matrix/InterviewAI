@@ -258,8 +258,42 @@ def upload_cv():
     return jsonify(response), (200 if response["status"] == "success" else 500)
 
 
+@app.route("/api/v1/analyze_cv", methods=["POST"])
+def analyze_cv_endpoint():
+    try:
+        data = request.json
+        if not data or 'cv_text' not in data:
+            return jsonify({
+                "error": "CV text is required",
+                "status": "error"
+            }), 400
+
+        cv_text = data['cv_text']
+        if not cv_text.strip():
+            return jsonify({
+                "error": "CV text cannot be empty",
+                "status": "error"
+            }), 400
+
+        # Import the analyze_cv function
+        from src.model.groq import analyze_cv
+        
+        # Get the analysis
+        analysis_result = analyze_cv(cv_text)
+        
+        # Return the analysis result
+        return jsonify({
+            "status": "success",
+            "analysis": analysis_result
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": str(e),
+            "status": "error"
+        }), 500
 
 
 if __name__ == "__main__":
-    app.run(host = '0.0.0.0', port = 7777, debug=True)
+    app.run(host = '0.0.0.0', port = 7777, debug=False)
 

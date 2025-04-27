@@ -117,3 +117,73 @@ def score_calculator(text):
 
     except Exception as e:
         return f"An error occurred: {e}"
+
+def analyze_cv(cv_text):
+    # Load OpenAI API key from the environment variable
+    client = OpenAI(
+        api_key=os.environ.get("OPENAI_API_KEY"),
+    )
+
+    # Construct the prompt
+    prompt = (
+        f"Analyze the following CV text and provide a detailed analysis including:\n"
+        f"1. ATS Score (0-100) based on the following criteria:\n"
+        f"   - Skills (10 points)\n"
+        f"   - Experience (15 points)\n"
+        f"   - Education (10 points)\n"
+        f"   - Certifications (5 points)\n"
+        f"   - Job Titles (5 points)\n"
+        f"   - Keywords from Job Description (10 points)\n"
+        f"   - Tools/Technologies (10 points)\n"
+        f"   - Achievements (10 points)\n"
+        f"   - Soft Skills (5 points)\n"
+        f"   - Hard Skills (5 points)\n"
+        f"   - Languages (5 points)\n"
+        f"   - Projects (5 points)\n"
+        f"   - Keywords Frequency (5 points)\n"
+        f"   - Action Verbs (5 points)\n"
+        f"   - Industry Keywords (5 points)\n"
+        f"   - Leadership (5 points)\n"
+        f"   - Metrics/Numbers (5 points)\n"
+        f"   - Publications (5 points)\n"
+        f"   - Volunteer Work (5 points)\n"
+        f"   - Consistency (5 points)\n"
+        f"   - Repetition (5 points)\n"
+        f"   - Length and Depth (5 points)\n\n"
+        f"2. Improvement Suggestions:\n"
+        f"   - List specific areas that need improvement\n"
+        f"   - Provide actionable recommendations\n"
+        f"   - Highlight missing elements\n"
+        f"   - Suggest better formatting or structure\n"
+        f"   - Recommend specific keywords to add\n"
+        f"   - Point out any inconsistencies or gaps\n\n"
+        f"3. Strengths:\n"
+        f"   - List the strong points of the CV\n"
+        f"   - Highlight well-presented sections\n"
+        f"   - Note effective use of keywords\n"
+        f"   - Mention good formatting choices\n\n"
+        f"CV Text: '{cv_text}'\n\n"
+        f"Return the analysis in a structured JSON format with the following keys:\n"
+        f"- ats_score (number)\n"
+        f"- improvement_suggestions (list of strings)\n"
+        f"- strengths (list of strings)\n"
+        f"- detailed_analysis (string with detailed explanation)"
+    )
+
+    # Generate the response
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+            model="gpt-4",
+        )
+        # Extract and return the response content
+        response_text = chat_completion.choices[0].message.content.strip()
+        return response_text
+
+    except Exception as e:
+        return f"An error occurred: {e}"
