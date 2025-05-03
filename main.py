@@ -11,7 +11,6 @@ from dotenv import load_dotenv
 from flask_cors import CORS
 from src.component.comp3.start_test import QuestionFetcherComp3
 from src.component.comp3.next import QuestionManagerComp3
-from src.component.comp3.result import UserResultFetcherComp3
 
 load_dotenv()
 
@@ -394,35 +393,6 @@ def get_next_question_comp3():
             "status_code": 500,
             "message": str(e)
         }), 500
-
-
-@app.route('/api/v1/get_user_result_comp3', methods=['GET'])
-def get_user_result_api_comp3():
-    try:
-        username = request.args.get('username')
-        if not username:
-            return jsonify({"error": "Username parameter is missing"}), 400
-
-        fetcher = UserResultFetcherComp3()
-        result = fetcher.get_user_result(username)
-
-        if result is None:
-            return jsonify({
-                "error": f"No completed session found for username: {username}"
-            }), 404
-
-        return jsonify({
-            "status": "success",
-            "result": result
-        }), 200
-
-    except Exception as e:
-        return jsonify({
-            "error": "An unexpected error occurred",
-            "status_code": 500,
-            "message": str(e)
-        }), 500
-
 
 if __name__ == "__main__":
     app.run(host = '0.0.0.0', port = 7777, debug=False)
