@@ -1,5 +1,6 @@
 import requests
 import json
+import os
 
 def question_checker(question,response):
     url = 'http://localhost:11434/api/generate'
@@ -164,3 +165,98 @@ def analyze_cv(cv_text):
 
     except Exception as e:
         return f"An error occurred: {e}"
+
+def generate_interview_question(cv_content, role, job_description, experience, previous_questions=None, previous_responses=None):
+    """
+    Generate a single interview question based on CV content and context
+    """
+    url = 'http://localhost:11434/api/generate'
+    # Build context from previous Q&A if available
+    context = ""
+    if previous_questions and previous_responses:
+        for q, r in zip(previous_questions, previous_responses):
+            context += f"Q: {q}\nA: {r}\n"
+
+    prompt = f"""
+    Role: {role}
+    Experience: {experience} years
+    Job Description: {job_description}
+    CV Content: {cv_content}
+    Previous Q&A Context:
+    {context}
+
+    Based on the above information, generate a single, specific technical interview question that:
+    1. Tests the candidate's expertise in areas mentioned in their CV
+    2. Is relevant to the role and job description
+    3. Builds upon previous questions and responses (if any)
+    4. Is clear and unambiguous
+    5. Requires a detailed technical response
+
+    Return only the question text, without any additional formatting or explanation.
+    """
+
+    data = {
+        "model": "llama3",
+        "prompt": prompt
+    }
+    response = requests.post(url, json=data)
+    if response.status_code == 200:
+        generated_response = ""
+        response_content = response.text.split('\n')
+        for json_str in response_content:
+            if json_str:
+                json_obj = json.loads(json_str)
+                generated_response += json_obj['response']
+        return generated_response.strip()
+    return f"An error occurred: {response.status_code} - {response.text}"
+
+def evaluate_interview_response(question, response, cv_content, role, job_description):
+    """
+    Evaluate an interview response and provide feedback
+    """
+    url = 'http://localhost:11434/api/generate'
+    prompt = f"""
+    Question: {question}
+    Candidate's Response: {response}
+    Role: {role}
+    Job Description: {job_description}
+    CV Content: {cv_content}
+
+    Evaluate the candidate's response based on:
+    1. Technical accuracy
+    2. Relevance to the question
+    3. Depth of understanding
+    4. Clarity of explanation
+
+    Provide your evaluation in exactly this format:
+    SCORE: [a number between 0.0 and 1.0]
+    FEEDBACK: [detailed constructive feedback explaining the score and suggesting improvements]
+
+    Make sure to provide substantive feedback that helps the candidate understand their strengths and areas for improvement.
+    """
+    data = {
+        "model": "llama3",
+        "prompt": prompt
+    }
+    try:
+        response_obj = requests.post(url, json=data)
+        if response_obj.status_code == 200:
+            eval_text = ""
+            response_content = response_obj.text.split('\n')
+            for json_str in response_content:
+                if json_str:
+                    json_obj = json.loads(json_str)
+                    eval_text += json_obj['response']
+            eval_text = eval_text.strip()
+            score_line = [line for line in eval_text.split('\n') if line.startswith('SCORE:')][0]
+            feedback_line = [line for line in eval_text.split('\n') if line.startswith('FEEDBACK:')][0]
+            score = float(score_line.split(':')[1].strip())
+            feedback = feedback_line.split(':')[1].strip()
+            return {
+                'score': score,
+                'feedback': feedback
+            }
+        else:
+            return {'score': 0, 'feedback': f"An error occurred: {response_obj.status_code} - {response_obj.text}"}
+    except Exception as e:
+        return {'score': 0, 'feedback': f"An error occurred while evaluating the response: {e}"}

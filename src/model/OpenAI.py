@@ -1,13 +1,13 @@
 from dotenv import load_dotenv
 import os
-from openai import OpenAI
+import openai
 
 # Load environment variables from a .env file
 load_dotenv()
 
 def question_checker(question, response):
     # Load OpenAI API key from the environment variable
-    client = OpenAI(
+    client = openai.OpenAI(
         api_key=os.environ.get("OPENAI_API_KEY"),
     )
 
@@ -46,7 +46,7 @@ def question_generator(text):
     general_question_generate = os.getenv("GENERAL_QUESTION_GENERATE")
     technical_question_generate = os.getenv("TECHNICAL_QUESTION_GENERATE")
     # Load OpenAI API key from the environment variable
-    client = OpenAI(
+    client = openai.OpenAI(
         api_key=os.environ.get("OPENAI_API_KEY"),
     )
 
@@ -91,7 +91,7 @@ def question_generator(text):
 
 def score_calculator(text):
     # Load OpenAI API key from the environment variable
-    client = OpenAI(
+    client = openai.OpenAI(
         api_key=os.environ.get("OPENAI_API_KEY"),
     )
 
@@ -123,7 +123,7 @@ def score_calculator(text):
 
 def analyze_cv(cv_text):
     # Load OpenAI API key from the environment variable
-    client = OpenAI(
+    client = openai.OpenAI(
         api_key=os.environ.get("OPENAI_API_KEY"),
     )
 
@@ -190,3 +190,73 @@ def analyze_cv(cv_text):
 
     except Exception as e:
         return f"An error occurred: {e}"
+
+def generate_interview_question(cv_content, role, job_description, experience, previous_questions=None, previous_responses=None):
+    """
+    Generate a single interview question based on CV content and context
+    """
+    context = ""
+    if previous_questions and previous_responses:
+        for q, r in zip(previous_questions, previous_responses):
+            context += f"Q: {q}\nA: {r}\n"
+
+    prompt = f"""
+    Role: {role}
+    Experience: {experience} years
+    Job Description: {job_description}
+    CV Content: {cv_content}
+    Previous Q&A Context:
+    {context}
+
+    Based on the above information, generate a single, specific technical interview question that:
+    1. Tests the candidate's expertise in areas mentioned in their CV
+    2. Is relevant to the role and job description
+    3. Builds upon previous questions and responses (if any)
+    4. Is clear and unambiguous
+    5. Requires a detailed technical response
+
+    Return only the question text, without any additional formatting or explanation.
+    """
+
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.choices[0].message['content'].strip()
+
+def evaluate_interview_response(question, response, cv_content, role, job_description):
+    """
+    Evaluate an interview response and provide feedback
+    """
+    prompt = f"""
+    Question: {question}
+    Candidate's Response: {response}
+    Role: {role}
+    Job Description: {job_description}
+    CV Content: {cv_content}
+
+    Evaluate the candidate's response based on:
+    1. Technical accuracy
+    2. Relevance to the question
+    3. Depth of understanding
+    4. Clarity of explanation
+
+    Provide your evaluation in exactly this format:
+    SCORE: [a number between 0.0 and 1.0]
+    FEEDBACK: [detailed constructive feedback explaining the score and suggesting improvements]
+
+    Make sure to provide substantive feedback that helps the candidate understand their strengths and areas for improvement.
+    """
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    eval_text = response.choices[0].message['content'].strip()
+    score_line = [line for line in eval_text.split('\n') if line.startswith('SCORE:')][0]
+    feedback_line = [line for line in eval_text.split('\n') if line.startswith('FEEDBACK:')][0]
+    score = float(score_line.split(':')[1].strip())
+    feedback = feedback_line.split(':')[1].strip()
+    return {
+        'score': score,
+        'feedback': feedback
+    }
