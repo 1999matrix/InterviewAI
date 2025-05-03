@@ -94,8 +94,57 @@ def create_user_test_info_table_2():
         print("Error:", error)
 
 
+def create_user_test_info_table_3():
+    try:
+        user_session_table_3 = os.getenv("user_session_table_3")
+        connection = mysql.connector.connect(
+            host=os.getenv("mysql_database_host"),
+            user=os.getenv("mysql_database_user"),
+            password=os.getenv("mysql_database_password"),
+            database=os.getenv("database_uq")
+        )
+        if connection.is_connected():
+            print("Connected to MySQL Server")
+            cursor = connection.cursor()
+
+            # First drop the table if it exists
+            drop_table_query = f"DROP TABLE IF EXISTS {user_session_table_3}"
+            cursor.execute(drop_table_query)
+            print(f"Table '{user_session_table_3}' dropped if it existed")
+
+            # Then create the table with correct column names
+            create_table_query = f"""
+            CREATE TABLE {user_session_table_3} (
+                username VARCHAR(255) PRIMARY KEY,
+                question TEXT,
+                response TEXT,
+                feedback TEXT,
+                evaluation_score TEXT,
+                response_count INT,
+                CV TEXT,
+                JD TEXT,
+                role VARCHAR(255),
+                experience INT,
+                cross_questions_count INT DEFAULT 0,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+            cursor.execute(create_table_query)
+            print("Table 'user_session_table_3' created successfully")
+
+            connection.commit()
+
+            cursor.close()
+            connection.close()
+            print("Connection closed")
+
+    except mysql.connector.Error as error:
+        print("Error:", error)
+
+
 if __name__ == "__main__":
     # Calling the functions to create the table and database
     create_database(os.getenv("database_uq"))
     create_user_test_info_table_1()
     create_user_test_info_table_2()
+    create_user_test_info_table_3()

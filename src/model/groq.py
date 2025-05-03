@@ -4,11 +4,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Use a consistent model across all functions
+GROQ_MODEL = "llama-3.3-70b-versatile"
 
 def question_checker(question, response):
     # Initialize the Groq client with the API key
     client = Groq(
-        api_key=os.getenv("GROQ_API_KEY")  # Set the API key in your environment variables
+        api_key=os.getenv("GROQ_API_KEY")
     )
 
     # Prepare the prompt
@@ -27,7 +29,7 @@ def question_checker(question, response):
             messages=[
                 {"role": "user", "content": prompt}
             ],
-            model="llama-3.3-70b-versatile"  # Adjust the model if needed
+            model=GROQ_MODEL
         )
 
         # Extract and return the generated response
@@ -36,16 +38,13 @@ def question_checker(question, response):
     except Exception as e:
         return f"An error occurred: {e}"
 
-
-
-
 def question_generator(text):
     total_question_generate = os.getenv("TOTAL_QUESTION_GENERATE")
     general_question_generate = os.getenv("GENERAL_QUESTION_GENERATE")
     technical_question_generate = os.getenv("TECHNICAL_QUESTION_GENERATE")
     # Initialize the Groq client with the API key
     client = Groq(
-        api_key=os.getenv("GROQ_API_KEY")  # Set the API key in your environment variables
+        api_key=os.getenv("GROQ_API_KEY")
     )
 
     # Prepare the prompt
@@ -64,7 +63,7 @@ def question_generator(text):
             messages=[
                 {"role": "user", "content": prompt}
             ],
-            model="llama-3.3-70b-versatile"  # Adjust the model if needed
+            model=GROQ_MODEL
         )
 
         # Extract the response
@@ -85,7 +84,7 @@ def question_generator(text):
 def score_calculator(text):
     # Initialize the Groq client with the API key
     client = Groq(
-        api_key=os.getenv("GROQ_API_KEY")  # Set the API key in your environment variables
+        api_key=os.getenv("GROQ_API_KEY")
     )
 
     # Prepare the prompt
@@ -100,7 +99,7 @@ def score_calculator(text):
             messages=[
                 {"role": "user", "content": prompt}
             ],
-            model="llama-3.3-70b-versatile"  # Adjust the model if needed
+            model=GROQ_MODEL
         )
 
         # Extract and return the generated response
@@ -171,7 +170,7 @@ def analyze_cv(cv_text):
             messages=[
                 {"role": "user", "content": prompt}
             ],
-            model="llama-3.3-70b-versatile"
+            model=GROQ_MODEL
         )
 
         # Extract and return the generated response
@@ -179,3 +178,95 @@ def analyze_cv(cv_text):
 
     except Exception as e:
         return f"An error occurred: {e}"
+
+def generate_interview_question(cv_content, role, job_description, experience, previous_questions=None, previous_responses=None):
+    """
+    Generate a single interview question based on CV content and context
+    """
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+    # Build context from previous Q&A if available
+    context = ""
+    if previous_questions and previous_responses:
+        for q, r in zip(previous_questions, previous_responses):
+            context += f"Q: {q}\nA: {r}\n"
+
+    prompt = f"""
+    Role: {role}
+    Experience: {experience} years
+    Job Description: {job_description}
+    CV Content: {cv_content}
+    Previous Q&A Context:
+    {context}
+
+    Based on the above information, generate a single, specific technical interview question that:
+    1. Tests the candidate's expertise in areas mentioned in their CV
+    2. Is relevant to the role and job description
+    3. Builds upon previous questions and responses (if any)
+    4. Is clear and unambiguous
+    5. Requires a detailed technical response
+
+    Return only the question text, without any additional formatting or explanation.
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=500
+        )
+
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"An error occurred: {e}"
+
+def evaluate_interview_response(question, response, cv_content, role, job_description):
+    """
+    Evaluate an interview response and provide feedback
+    """
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+    prompt = f"""
+    Question: {question}
+    Candidate's Response: {response}
+    Role: {role}
+    Job Description: {job_description}
+    CV Content: {cv_content}
+
+    Evaluate the candidate's response based on:
+    1. Technical accuracy
+    2. Relevance to the question
+    3. Depth of understanding
+    4. Clarity of explanation
+
+    Provide your evaluation in exactly this format:
+    SCORE: [a number between 0.0 and 1.0]
+    FEEDBACK: [detailed constructive feedback explaining the score and suggesting improvements]
+
+    Make sure to provide substantive feedback that helps the candidate understand their strengths and areas for improvement.
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=1000
+        )
+
+        eval_text = response.choices[0].message.content.strip()
+        
+        # Parse the response
+        score_line = [line for line in eval_text.split('\n') if line.startswith('SCORE:')][0]
+        feedback_line = [line for line in eval_text.split('\n') if line.startswith('FEEDBACK:')][0]
+        
+        score = float(score_line.split(':')[1].strip())
+        feedback = feedback_line.split(':')[1].strip()
+
+        return {
+            'score': score,
+            'feedback': feedback
+        }
+    except Exception as e:
+        return {'score': 0, 'feedback': f"An error occurred while evaluating the response: {e}"}

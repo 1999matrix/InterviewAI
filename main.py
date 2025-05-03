@@ -9,6 +9,9 @@ from src.component.comp2.next import QuestionManagerComp2
 from src.component.comp2.cv_to_db import UserCVHandler
 from dotenv import load_dotenv
 from flask_cors import CORS
+from src.component.comp3.start_test import QuestionFetcherComp3
+from src.component.comp3.next import QuestionManagerComp3
+from src.component.comp3.result import UserResultFetcherComp3
 
 load_dotenv()
 
@@ -291,6 +294,133 @@ def analyze_cv_endpoint():
         return jsonify({
             "error": str(e),
             "status": "error"
+        }), 500
+
+
+@app.route('/api/v1/start_test_comp3', methods=['POST'])
+def handle_start_test_comp3():
+    try:
+        # Validate input data
+        data = request.json
+        if not data:
+            return jsonify({"error": "No input data provided"}), 400
+
+        # Extract parameters with validation
+        username = data.get('username')
+        role = data.get('role')
+        job_description = data.get('job_description', '')
+        experience = data.get('experience')
+        cv_flag = data.get('cv', True)
+
+        # Validate required parameters
+        if not username:
+            return jsonify({"error": "Username is required"}), 400
+        
+        if not role:
+            return jsonify({"error": "Role is required"}), 400
+        
+        if experience is None:
+            return jsonify({"error": "Experience is required"}), 400
+
+        # Create QuestionFetcherComp3 instance and start session
+        try:
+            fetcher = QuestionFetcherComp3(
+                username, role, job_description, experience, cv_flag
+            )
+            result = fetcher.start_session()
+        except FileNotFoundError as fnf:
+            return jsonify({
+                "error": str(fnf),
+                "status_code": 404,
+                "message": "CV not found for the given username"
+            }), 404
+        except Exception as e:
+            return jsonify({
+                "error": "Failed to start session",
+                "status_code": 500,
+                "message": str(e)
+            }), 500
+
+        # Return successful response
+        return jsonify({
+            'status': 'success',
+            'status_code': 200,
+            'question': result['question'],
+            'total_questions': result['total_questions']
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": "An unexpected error occurred",
+            "status_code": 500,
+            "message": str(e)
+        }), 500
+
+
+@app.route('/api/v1/get_next_question_comp3', methods=['POST'])
+def get_next_question_comp3():
+    try:
+        data = request.json
+        if not data:
+            return jsonify({"error": "No input data provided"}), 400
+
+        username = data.get('username')
+        response = data.get('response')
+
+        if not username:
+            return jsonify({"error": "Username is required"}), 400
+        if not response:
+            return jsonify({"error": "Response is required"}), 400
+
+        question_manager = QuestionManagerComp3()
+        result = question_manager.process_response_and_get_next(username, response)
+
+        if result['status'] == 'completed':
+            return jsonify({
+                'status': 'completed',
+                'message': result['message']
+            }), 200
+
+        return jsonify({
+            'status': 'success',
+            'evaluation': result['evaluation'],
+            'next_question': result['next_question'],
+            'questions_remaining': result['questions_remaining']
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": "An unexpected error occurred",
+            "status_code": 500,
+            "message": str(e)
+        }), 500
+
+
+@app.route('/api/v1/get_user_result_comp3', methods=['GET'])
+def get_user_result_api_comp3():
+    try:
+        username = request.args.get('username')
+        if not username:
+            return jsonify({"error": "Username parameter is missing"}), 400
+
+        fetcher = UserResultFetcherComp3()
+        result = fetcher.get_user_result(username)
+
+        if result is None:
+            return jsonify({
+                "error": f"No completed session found for username: {username}"
+            }), 404
+
+        return jsonify({
+            "status": "success",
+            "result": result
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": "An unexpected error occurred",
+            "status_code": 500,
+            "message": str(e)
         }), 500
 
 

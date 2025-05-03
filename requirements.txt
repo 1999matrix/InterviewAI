@@ -7,6 +7,6 @@ pyaudio
 requests
 Flask
 openpyxl
-PyMuPDF
+PyMuPDF==1.23.8
 mysql-connector-python
-groq
+groq==0.3.1
