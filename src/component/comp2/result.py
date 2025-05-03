@@ -114,7 +114,7 @@ class UserResultFetcherComp2:
             if self.connection.is_connected():
                 cursor.close()
 
-        return response_result_list
+        return None
 
 # if __name__ == "__main__":
 #     fetcher = UserResultFetcherComp2()

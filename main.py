@@ -239,9 +239,10 @@ def get_user_result_api_comp2():
     response_result = fetcher.get_user_result(username)
     
     if response_result is None:
-        return jsonify({"error": f"No data found for username: {username}"}), 404
+        # Success, but nothing to return
+        return jsonify({"message": "User result processed successfully."}), 200
 
-    return jsonify({"response_result": response_result}), 200
+    return jsonify(response_result), 200
 
 
 
