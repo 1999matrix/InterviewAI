@@ -13,10 +13,13 @@ def question_checker(question, response):
 
     # Construct the prompt
     prompt = (
-        f"Given the following question and response, provide the following three pieces of information:\n"
+        f"Given the following question and response, your main task is to check if the response actually answers the question as asked. "
+        f"If the response is different from what was asked, is off-topic, or does not address the question directly, strongly penalize it and provide clear feedback about the mismatch. "
+        f"Otherwise, evaluate as follows:\n"
         f"1) Correctness: Indicate whether the response is correct, partially correct, or incorrect.\n"
         f"2) Explanation: If the response is incorrect or partially correct, provide the correct explanation.\n"
         f"3) Conclusion: Summarize the accuracy of the response and suggest any improvements if necessary.\n\n"
+        f"Make sure to focus primarily on whether the response matches the question asked.\n"
         f"Question: '{question}'\n"
         f"Response: '{response}'"
     )
@@ -235,7 +238,7 @@ def evaluate_interview_response(question, response, cv_content, role, job_descri
     Job Description: {job_description}
     CV Content: {cv_content}
 
-    Evaluate the candidate's response based on:
+    Your main task is to check if the candidate's response actually answers the question as asked. If the response is different from what was asked, is off-topic, or does not address the question directly, strongly penalize it and provide clear feedback about the mismatch. Otherwise, evaluate as follows:
     1. Technical accuracy
     2. Relevance to the question
     3. Depth of understanding
@@ -245,7 +248,7 @@ def evaluate_interview_response(question, response, cv_content, role, job_descri
     SCORE: [a number between 0.0 and 1.0]
     FEEDBACK: [detailed constructive feedback explaining the score and suggesting improvements]
 
-    Make sure to provide substantive feedback that helps the candidate understand their strengths and areas for improvement.
+    Make sure to focus primarily on whether the response matches the question asked, and provide substantive feedback that helps the candidate understand their strengths and areas for improvement.
     """
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
