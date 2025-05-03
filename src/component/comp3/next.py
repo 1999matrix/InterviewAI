@@ -92,7 +92,7 @@ class QuestionManagerComp3:
                 cursor.execute(insert_query, (
                     datetime.now(),
                     username,
-                    json.dumps(report),
+                    json.dumps([report]),
                     percentage
                 ))
                 connection.commit()
