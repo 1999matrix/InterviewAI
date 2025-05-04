@@ -27,7 +27,8 @@ def create_user_history_table():
                 report TEXT,
                 percentage INT,
                 user_id BIGINT,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+                component_type VARCHAR(255)
             )
             """
             cursor.execute(create_table_query)

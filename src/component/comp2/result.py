@@ -97,10 +97,10 @@ class UserResultFetcherComp2:
             # Insert the result into user_history_table
             cursor = self.connection.cursor()
             insert_query = f"""
-                INSERT INTO {self.user_history_table} (record_date, username, report, percentage)
-                VALUES (NOW(), %s, %s, %s)
+                INSERT INTO {self.user_history_table} (record_date, username, report, percentage, component_type)
+                VALUES (NOW(), %s, %s, %s, %s)
             """
-            cursor.execute(insert_query, (username, report_data, percentage))
+            cursor.execute(insert_query, (username, report_data, percentage, "comp2"))
             self.connection.commit()
 
             # Delete the user record from user_session_table_2

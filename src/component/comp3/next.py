@@ -86,14 +86,15 @@ class QuestionManagerComp3:
                 # Store in user_history table
                 insert_query = f"""
                 INSERT INTO {self.user_history_table}
-                (record_date, username, report, percentage)
-                VALUES (%s, %s, %s, %s)
+                (record_date, username, report, percentage, component_type)
+                VALUES (%s, %s, %s, %s, %s)
                 """
                 cursor.execute(insert_query, (
                     datetime.now(),
                     username,
                     json.dumps([report]),
-                    percentage
+                    percentage,
+                    "comp3"
                 ))
                 connection.commit()
 
