@@ -11,6 +11,12 @@ from dotenv import load_dotenv
 from flask_cors import CORS
 from src.component.comp3.start_test import QuestionFetcherComp3
 from src.component.comp3.next import QuestionManagerComp3
+from src.utils import create_database
+from src.database_config.user_cv.user_cv_table import create_user_cv_table
+from src.database_config.question_db.inserting_data_to_mysql import python_table_creation, insert_questions_from_excel
+from src.database_config.user_manager.user_manager import create_user_history_table
+from src.database_config.user_session.user_session_tables import create_user_test_info_table_1, create_user_test_info_table_2, create_user_test_info_table_3
+import os
 
 load_dotenv()
 
@@ -82,32 +88,6 @@ def get_user_result_api_comp1():
     return jsonify({"response_result": response_result}), 200
 
 
-
-
-# @app.route('/api/v1/start_test_comp2', methods=['POST'])
-# def start_test_comp2():
-#     data = request.json
-#     username = data.get('username')
-#     role = data.get('role')
-#     job_description = data.get('job_description')
-#     experience = data.get('experience')
-#     cv_flag = data.get('cv', True)
-
-#     QuestionFetcherComp2_instance = QuestionFetcherComp2(username, role, job_description, experience, cv_flag)
-#     result = QuestionFetcherComp2_instance.generate_question_from_cv()
-
-#     # Insert the questions into the database
-#     questions = result['question'].tolist()  # Convert the questions column to a list
-#     # print(questions)
-#     first_question  = QuestionFetcherComp2_instance.insert_questions_into_db(questions)
-
-#     if not username:
-#         return jsonify({"error": "Username parameter is missing"}), 400
-    
-#     if first_question is None:
-#         return jsonify({"error": f"No data found for username: {username}"}), 404
-
-#     return jsonify({'question': str(first_question)})
 
 @app.route('/api/v1/start_test_comp2', methods=['POST'])
 def handle_start_test_comp2():
@@ -396,5 +376,32 @@ def get_next_question_comp3():
         }), 500
 
 if __name__ == "__main__":
+    # creating database if not exist
+    database_name = os.getenv("database_uq")
+    create_database(database_name)
+
+    # Define the path to the Excel file and the target table name
+    question_file_path = "C:/Users/bhupe/Goal_77/src/database_config/question_db/questions.xlsx"
+    question_table_name = os.getenv("question_table_name")
+
+    # Create table and insert questions
+    python_table_creation(question_table_name)
+    insert_questions_from_excel(question_file_path, question_table_name)
+
+
+
+    #creatuing CV schema
+    create_user_cv_table()
+
+
+    #creating user_history table
+    create_user_history_table()
+
+    #creating user_session table
+    create_user_test_info_table_1()
+    create_user_test_info_table_2()
+    create_user_test_info_table_3()
+
+    #running the app
     app.run(host = '0.0.0.0', port = 7777, debug=False)
 
