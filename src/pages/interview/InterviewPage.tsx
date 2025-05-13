@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Play, Square, Clock, ArrowRight, CheckCircle } from 'lucide-react';
+import { Mic, MicOff, Play, Square, Clock, ArrowRight, CheckCircle, Send } from 'lucide-react';
 import Button from '../../components/ui/Button';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { getNextQuestion, getFeedback } from '../../services/Sharedservice';
 
 // Mock interview questions
 const mockQuestions = [
@@ -16,7 +18,42 @@ const mockQuestions = [
   "How do you handle errors and debugging in your applications?",
 ];
 
+interface LocationState {
+  question?: string[] | string;
+  interviewType?: string;
+  user?: string;
+}
+
 const InterviewPage: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const state = location.state as LocationState;
+  const [currentAnswer, setCurrentAnswer] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
+  
+  // Process questions from API or use mock questions
+  const processQuestions = () => {
+    if (state?.question) {
+      if (Array.isArray(state.question)) {
+        return state.question;
+      } else if (typeof state.question === 'string') {
+        try {
+          // If the API returns a JSON string, attempt to parse it
+          const parsedQuestions = JSON.parse(state.question);
+          return Array.isArray(parsedQuestions) ? parsedQuestions : [state.question];
+        } catch (e) {
+          // If parsing fails, treat it as a single question
+          return [state.question];
+        }
+      }
+    }
+    return mockQuestions;
+  };
+  
+  const [questions, setQuestions] = useState(processQuestions());
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [isAnswering, setIsAnswering] = useState(false);
@@ -31,10 +68,45 @@ const InterviewPage: React.FC = () => {
       if (timerRef.current) window.clearInterval(timerRef.current);
     };
   }, []);
+
+  // Initialize media recorder
+  useEffect(() => {
+    const initMediaRecorder = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const recorder = new MediaRecorder(stream);
+
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            setAudioChunks((chunks) => [...chunks, e.data]);
+          }
+        };
+
+        recorder.onstop = () => {
+          // Speech recognition or sending to API could be done here
+          console.log("Recording stopped, processing audio...");
+        };
+
+        setMediaRecorder(recorder);
+      } catch (err) {
+        console.error("Error accessing microphone:", err);
+        setApiError("Could not access microphone. Please check your device settings.");
+      }
+    };
+
+    initMediaRecorder();
+  }, []);
   
   const startAnswering = () => {
     setIsAnswering(true);
     setIsRecording(true);
+    setCurrentAnswer('');
+    setAudioChunks([]);
+    
+    // Start recording
+    if (mediaRecorder && mediaRecorder.state !== 'recording') {
+      mediaRecorder.start(1000); // collect data every second
+    }
     
     // Start the timer
     timerRef.current = window.setInterval(() => {
@@ -54,22 +126,61 @@ const InterviewPage: React.FC = () => {
       window.clearInterval(timerRef.current);
     }
     
+    // Stop recording
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+    }
+    
     setIsRecording(false);
     setIsAnswering(false);
     setCompletedQuestions([...completedQuestions, currentQuestionIndex]);
     
     // If this was the last question, end the session
-    if (currentQuestionIndex === mockQuestions.length - 1) {
+    if (currentQuestionIndex === questions.length - 1) {
       setIsSessionComplete(true);
     }
   };
   
-  const nextQuestion = () => {
-    if (currentQuestionIndex < mockQuestions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setTimeRemaining(120); // Reset timer for new question
-    } else {
-      setIsSessionComplete(true);
+  const nextQuestion = async () => {
+    setIsLoading(true);
+    setApiError(null);
+    
+    try {
+      // If we have an answer, send it to the API to get the next question
+      if (currentAnswer.trim() || audioChunks.length > 0) {
+        // In a real app, you might want to send the audio or transcribed text
+        const result = await getNextQuestion(
+          'get_next_question',
+          state?.user || 'guest',
+          currentAnswer
+        );
+        
+        if (result.status === 200 && result.data.question) {
+          // Add the new question to our list
+          const newQuestion = result.data.question;
+          setQuestions([...questions, newQuestion]);
+          setCurrentQuestionIndex(currentQuestionIndex + 1);
+          setTimeRemaining(120); // Reset timer for new question
+          setCurrentAnswer(''); // Clear the current answer
+          setAudioChunks([]); // Clear audio chunks
+          return;
+        }
+      }
+      
+      // Fallback behavior if no response from API
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(currentQuestionIndex + 1);
+        setTimeRemaining(120); // Reset timer for new question
+        setCurrentAnswer(''); // Clear the current answer
+        setAudioChunks([]); // Clear audio chunks
+      } else {
+        setIsSessionComplete(true);
+      }
+    } catch (error: any) {
+      console.error("Error getting next question:", error);
+      setApiError(error.response?.data?.message || error.message || "Failed to retrieve the next question.");
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -80,6 +191,29 @@ const InterviewPage: React.FC = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
+  // View feedback after completing the session
+  const viewFeedback = async () => {
+    setIsLoading(true);
+    try {
+      const result = await getFeedback('get_feedback', state?.user || 'guest');
+      if (result.status === 200) {
+        // In a real app, you would navigate to a feedback page with the results
+        console.log("Feedback received:", result.data);
+        // navigate('/feedback', { state: { feedback: result.data } });
+      }
+    } catch (error) {
+      console.error("Error getting feedback:", error);
+      setApiError("Failed to retrieve feedback. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Handle text answer input
+  const handleAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setCurrentAnswer(e.target.value);
+  };
+  
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Interview Header */}
@@ -87,14 +221,14 @@ const InterviewPage: React.FC = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-xl font-semibold">Frontend Developer Interview</h1>
-              <p className="text-gray-600 text-sm">Mid-Level (4-7 years)</p>
+              <h1 className="text-xl font-semibold">{state?.interviewType === 'coding' ? 'Coding & Technical' : 'Theory & Behavioral'} Interview</h1>
+              <p className="text-gray-600 text-sm">{state?.user || 'Guest'}</p>
             </div>
             
             <div className="flex items-center space-x-4">
               <div className="bg-blue-50 text-blue-700 py-1 px-3 rounded-full text-sm font-medium flex items-center">
                 <Clock className="w-4 h-4 mr-1.5" />
-                <span>Question {currentQuestionIndex + 1} of {mockQuestions.length}</span>
+                <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
               </div>
               
               {isAnswering && (
@@ -126,16 +260,19 @@ const InterviewPage: React.FC = () => {
                 <Button variant="outline">
                   Review Answers
                 </Button>
-                <Button>
+                <Button onClick={viewFeedback} disabled={isLoading}>
                   View Feedback
                 </Button>
               </div>
+              {apiError && (
+                <p className="text-red-500 text-sm mt-3">{apiError}</p>
+              )}
             </div>
           ) : (
             <div className="bg-white rounded-xl shadow-sm p-8">
               <div className="mb-8">
                 <h2 className="text-lg font-semibold text-gray-700 mb-2">Question {currentQuestionIndex + 1}</h2>
-                <p className="text-xl">{mockQuestions[currentQuestionIndex]}</p>
+                <p className="text-xl">{questions[currentQuestionIndex]}</p>
               </div>
               
               {/* Timer */}
@@ -145,6 +282,20 @@ const InterviewPage: React.FC = () => {
                 <Clock className={`w-5 h-5 mr-2 ${timeRemaining < 30 ? 'animate-pulse' : ''}`} />
                 <span className="font-medium">{formatTime(timeRemaining)}</span>
               </div>
+              
+              {/* Text Answer Area - visible when answering */}
+              {isAnswering && (
+                <div className="mb-4">
+                  <textarea
+                    value={currentAnswer}
+                    onChange={handleAnswerChange}
+                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Type your answer here (optional - you can also just speak)..."
+                    rows={4}
+                    disabled={!isAnswering}
+                  />
+                </div>
+              )}
               
               <div className="flex space-x-4">
                 {!isAnswering ? (
@@ -171,12 +322,17 @@ const InterviewPage: React.FC = () => {
                     variant="outline"
                     onClick={nextQuestion}
                     className="flex items-center"
+                    disabled={isLoading}
                   >
-                    Next Question
+                    {isLoading ? 'Loading...' : 'Next Question'}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 )}
               </div>
+              
+              {apiError && (
+                <p className="text-red-500 text-sm mt-3">{apiError}</p>
+              )}
             </div>
           )}
           
@@ -210,7 +366,7 @@ const InterviewPage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h3 className="text-lg font-semibold mb-4">Question Progress</h3>
             <div className="space-y-2">
-              {mockQuestions.map((question, index) => (
+              {questions.map((question, index) => (
                 <button
                   key={index}
                   className={`w-full text-left py-2 px-3 rounded-md transition-colors ${

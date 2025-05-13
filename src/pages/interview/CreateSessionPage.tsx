@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Brain, 
@@ -13,6 +13,9 @@ import {
   XCircle
 } from 'lucide-react';
 import Button from '../../components/ui/Button';
+import { saveResume, getQuestion } from '../../services/Sharedservice';
+import { useContext } from 'react';
+import { AuthContext } from '../../contexts/AuthContext';
 
 const jobRoles = [
   'Frontend Developer',
@@ -37,6 +40,7 @@ const experienceLevels = [
 
 const CreateSessionPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     interviewType: '',
@@ -48,6 +52,10 @@ const CreateSessionPage: React.FC = () => {
   });
   const [fileName, setFileName] = useState('');
   const [fileError, setFileError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const handleInterviewTypeSelect = (type: string) => {
     setFormData({
@@ -65,27 +73,40 @@ const CreateSessionPage: React.FC = () => {
     setCurrentStep(upload ? 3 : 4);
   };
   
+  const processFile = (file: File) => {
+    setFileError('');
+    if (file.type !== 'application/pdf') {
+      setFileError('Please upload a PDF file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setFileError('File size should be less than 5MB');
+      return;
+    }
+    setFormData({
+      ...formData,
+      file,
+    });
+    setFileName(file.name);
+  };
+  
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    setFileError('');
-    
     if (file) {
-      if (file.type !== 'application/pdf') {
-        setFileError('Please upload a PDF file');
-        return;
-      }
-      
-      if (file.size > 5 * 1024 * 1024) {
-        setFileError('File size should be less than 5MB');
-        return;
-      }
-      
-      setFormData({
-        ...formData,
-        file: file,
-      });
-      setFileName(file.name);
+      processFile(file);
     }
+  };
+  
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      processFile(file);
+    }
+  };
+  
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
   };
   
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -131,10 +152,61 @@ const CreateSessionPage: React.FC = () => {
     }
   };
   
-  const handleSubmit = () => {
-    // In a real app, you would process the form data here
-    // For now, navigate to the interview page
-    navigate('/interview/session');
+  const handleSubmit = async () => {
+    setIsLoading(true);
+    setApiError(null);
+    
+    try {
+      // Convert the experience level to a number
+      const experienceNumber = parseInt(formData.experienceLevel.split(' ')[0]) || 1;
+      
+      // Create FormData for resume upload if provided
+      if (formData.uploadResume && formData.file) {
+        const resumeFormData = new FormData();
+        resumeFormData.append('username', user?.name || user?.email || 'guest');
+        resumeFormData.append('pdf_file', formData.file);
+        
+        console.log('Uploading resume...');
+        
+        // Upload the resume first
+        const resumeResult = await saveResume('upload_cv', resumeFormData);
+        console.log('Resume upload response:', resumeResult);
+      }
+      
+      // Get interview questions based on form data
+      console.log('Starting interview with params:', {
+        username: user?.name || user?.email || 'guest',
+        role: formData.jobRole,
+        job_description: formData.jobDescription,
+        experience: experienceNumber,
+        cv: formData.uploadResume && !!formData.file
+      });
+      
+      const questionResult = await getQuestion(
+        'start_test_comp2',
+        user?.name || user?.email || 'guest',
+        formData.jobRole,
+        formData.jobDescription,
+        experienceNumber,
+        formData.uploadResume && !!formData.file
+      );
+      
+      if (questionResult.status === 200) {
+        // Navigate to interview session with questions
+        navigate('/interview/session', {
+          state: {
+            question: questionResult.data.questions || questionResult.data.question,
+            interviewType: formData.interviewType,
+            user: user?.name || user?.email || 'guest'
+          }
+        });
+      }
+    } catch (error: any) {
+      console.error('Error starting interview:', error);
+      setApiError(error.response?.data?.message || error.message || 'Failed to start the interview. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const removeFile = () => {
@@ -327,27 +399,34 @@ const CreateSessionPage: React.FC = () => {
             </p>
             
             {!formData.file ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+              <div
+                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center"
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onClick={() => fileInputRef.current?.click()}
+              >
                 <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">Drag and drop your resume</h3>
                 <p className="text-gray-500 text-sm mb-4">or click to browse (PDF only, max 5MB)</p>
                 
                 <input
                   type="file"
-                  id="resume"
+                  ref={fileInputRef}
                   accept=".pdf"
                   className="hidden"
                   onChange={handleFileChange}
                 />
-                <label htmlFor="resume">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="mx-auto"
-                  >
-                    Browse Files
-                  </Button>
-                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mx-auto mt-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
+                >
+                  Browse Files
+                </Button>
                 
                 {fileError && (
                   <p className="text-red-500 text-sm mt-3">{fileError}</p>
@@ -481,13 +560,16 @@ const CreateSessionPage: React.FC = () => {
               <Button
                 type="button"
                 onClick={handleSubmit}
-                disabled={!isStepComplete()}
+                disabled={!isStepComplete() || isLoading}
                 className="flex items-center"
               >
-                Start Interview
+                {isLoading ? 'Starting...' : 'Start Interview'}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
+            {apiError && (
+              <p className="text-red-500 text-sm mt-3">{apiError}</p>
+            )}
           </div>
         )}
       </div>

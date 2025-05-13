@@ -10,6 +10,8 @@ import InterviewLayout from '../pages/interview/InterviewLayout';
 
 // Public Pages
 import LandingPage from '../pages/LandingPage';
+import DemoPage from '../pages/DemoPage';
+import PricingPage from '../pages/PricingPage';
 import LoginPage from '../pages/auth/LoginPage';
 import SignupPage from '../pages/auth/SignupPage';
 
@@ -37,6 +39,8 @@ const AppRoutes: React.FC = () => {
       {/* Public Routes */}
       <Route element={<MainLayout />}>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/demo" element={<DemoPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />

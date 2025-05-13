@@ -92,7 +92,7 @@ const Navbar: React.FC = () => {
 
 const NavLinks: React.FC = () => (
   <div className="flex items-center space-x-6">
-    <Link to="/interview" className="nav-link group">
+    <Link to="/interview/profile" className="nav-link group">
       <div className="flex items-center">
         <Brain className="w-4 h-4 mr-1.5" />
         <span>Interview Prep</span>
@@ -119,7 +119,7 @@ const NavLinks: React.FC = () => (
 const MobileNavLinks: React.FC<{ closeMenu: () => void }> = ({ closeMenu }) => (
   <>
     <Link 
-      to="/interview" 
+      to="/interview/profile" 
       className="py-2 text-gray-700 hover:text-blue-600 transition-colors"
       onClick={closeMenu}
     >
