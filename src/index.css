@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Styles */
+@layer components {
+  .nav-link {
+    @apply relative inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors;
+  }
+  
+  .nav-indicator {
+    @apply absolute inset-x-0 bottom-0 h-0.5 bg-blue-600 scale-x-0 transition-transform duration-200 ease-in-out group-hover:scale-x-100;
+  }
+  
+  .input-field {
+    @apply appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500;
+  }
+}
+
+/* Progress chart styles */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: #f3f4f6;
+}
+
+/* Activity heatmap custom styles */
+.react-calendar-heatmap .color-scale-1 { fill: #dbeafe; }
+.react-calendar-heatmap .color-scale-2 { fill: #93c5fd; }
+.react-calendar-heatmap .color-scale-3 { fill: #60a5fa; }
+.react-calendar-heatmap .color-scale-4 { fill: #2563eb; }
+
+/* Basic styles */
+body {
+  @apply antialiased text-gray-900;
+}
+
+/* Animation for pulsing elements */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
