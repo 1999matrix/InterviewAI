@@ -44,6 +44,7 @@ const CreateSessionPage: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     interviewType: '',
+    interviewMode: '',
     uploadResume: false,
     file: null as File | null,
     jobRole: '',
@@ -157,10 +158,8 @@ const CreateSessionPage: React.FC = () => {
     setApiError(null);
     
     try {
-      // Convert the experience level to a number
       const experienceNumber = parseInt(formData.experienceLevel.split(' ')[0]) || 1;
       
-      // Create FormData for resume upload if provided
       if (formData.uploadResume && formData.file) {
         const resumeFormData = new FormData();
         resumeFormData.append('username', user?.name || user?.email || 'guest');
@@ -168,36 +167,37 @@ const CreateSessionPage: React.FC = () => {
         
         console.log('Uploading resume...');
         
-        // Upload the resume first
-        const resumeResult = await saveResume('upload_cv', resumeFormData);
-        console.log('Resume upload response:', resumeResult);
+        await saveResume('upload_cv', resumeFormData);
       }
       
-      // Get interview questions based on form data
-      console.log('Starting interview with params:', {
-        username: user?.name || user?.email || 'guest',
-        role: formData.jobRole,
-        job_description: formData.jobDescription,
-        experience: experienceNumber,
-        cv: formData.uploadResume && !!formData.file
-      });
+      let questionResult;
+      if (formData.interviewMode === 'comp2') {
+        questionResult = await getQuestion(
+          'start_test_comp2',
+          user?.name || user?.email || 'guest',
+          formData.jobRole,
+          formData.jobDescription,
+          experienceNumber,
+          formData.uploadResume && !!formData.file
+        );
+      } else if (formData.interviewMode === 'comp3') {
+        questionResult = await getQuestion(
+          'start_test_comp3',
+          user?.name || user?.email || 'guest',
+          formData.jobRole,
+          formData.jobDescription,
+          experienceNumber,
+          formData.uploadResume && !!formData.file
+        );
+      }
       
-      const questionResult = await getQuestion(
-        'start_test_comp2',
-        user?.name || user?.email || 'guest',
-        formData.jobRole,
-        formData.jobDescription,
-        experienceNumber,
-        formData.uploadResume && !!formData.file
-      );
-      
-      if (questionResult.status === 200) {
-        // Navigate to interview session with questions
+      if (questionResult && questionResult.status === 200) {
         navigate('/interview/session', {
           state: {
             question: questionResult.data.questions || questionResult.data.question,
             interviewType: formData.interviewType,
-            user: user?.name || user?.email || 'guest'
+            user: user?.name || user?.email || 'guest',
+            interviewMode: formData.interviewMode,
           }
         });
       }
@@ -301,45 +301,48 @@ const CreateSessionPage: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm p-8 mb-6">
         {currentStep === 1 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold mb-4">Select Interview Type</h2>
-            <p className="text-gray-600 mb-8">Choose the type of interview practice you want to do.</p>
-            
+            <h2 className="text-xl font-semibold mb-4">Select Interview Mode</h2>
+            <p className="text-gray-600 mb-8">Choose your interview experience.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <button
                 type="button"
                 className={`flex flex-col items-center justify-center border rounded-lg p-6 transition-all ${
-                  formData.interviewType === 'theory'
+                  formData.interviewMode === 'comp2'
                     ? 'border-blue-600 ring-2 ring-blue-200 bg-blue-50'
                     : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
                 }`}
-                onClick={() => handleInterviewTypeSelect('theory')}
+                onClick={() => setFormData({ ...formData, interviewMode: 'comp2' })}
               >
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                  <Brain className="w-8 h-8 text-blue-600" />
-                </div>
-                <h3 className="text-lg font-medium">Theory & Behavioral</h3>
+                <h3 className="text-lg font-medium">No Cross-Questioning</h3>
                 <p className="text-gray-500 text-sm mt-2 text-center">
-                  Practice answering common interview questions and behavioral scenarios.
+                  Standard interview (Comp2): No follow-up questions.
                 </p>
               </button>
-              
               <button
                 type="button"
                 className={`flex flex-col items-center justify-center border rounded-lg p-6 transition-all ${
-                  formData.interviewType === 'coding'
+                  formData.interviewMode === 'comp3'
                     ? 'border-blue-600 ring-2 ring-blue-200 bg-blue-50'
                     : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
                 }`}
-                onClick={() => handleInterviewTypeSelect('coding')}
+                onClick={() => setFormData({ ...formData, interviewMode: 'comp3' })}
               >
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                  <Code className="w-8 h-8 text-blue-600" />
-                </div>
-                <h3 className="text-lg font-medium">Coding & Technical</h3>
+                <h3 className="text-lg font-medium">With Cross-Questioning</h3>
                 <p className="text-gray-500 text-sm mt-2 text-center">
-                  Solve technical problems and coding challenges in a simulated environment.
+                  Dynamic interview (Comp3): Get follow-up questions based on your answers.
                 </p>
               </button>
+            </div>
+            <div className="flex justify-end mt-10">
+              <Button
+                type="button"
+                onClick={() => formData.interviewMode && setCurrentStep(2)}
+                disabled={!formData.interviewMode}
+                className="flex items-center"
+              >
+                Next
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
             </div>
           </div>
         )}

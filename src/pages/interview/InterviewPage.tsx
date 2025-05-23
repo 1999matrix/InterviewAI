@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Play, Square, Clock, ArrowRight, CheckCircle, Send } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getNextQuestion, getFeedback } from '../../services/Sharedservice';
+import { getNextQuestionComp2, getNextQuestionComp3, getUserResultComp2, getFeedback } from '../../services/Sharedservice';
+import axios from 'axios';
 
 // Mock interview questions
 const mockQuestions = [
@@ -22,6 +23,7 @@ interface LocationState {
   question?: string[] | string;
   interviewType?: string;
   user?: string;
+  interviewMode?: string;
 }
 
 const InterviewPage: React.FC = () => {
@@ -33,6 +35,7 @@ const InterviewPage: React.FC = () => {
   const [apiError, setApiError] = useState<string | null>(null);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   
   // Process questions from API or use mock questions
   const processQuestions = () => {
@@ -60,6 +63,7 @@ const InterviewPage: React.FC = () => {
   const [timeRemaining, setTimeRemaining] = useState(120); // 2 minutes per question
   const [completedQuestions, setCompletedQuestions] = useState<number[]>([]);
   const [isSessionComplete, setIsSessionComplete] = useState(false);
+  const [interviewMode, setInterviewMode] = useState(state?.interviewMode || 'comp2');
   
   const timerRef = useRef<number | null>(null);
   
@@ -102,17 +106,13 @@ const InterviewPage: React.FC = () => {
     setIsRecording(true);
     setCurrentAnswer('');
     setAudioChunks([]);
-    
-    // Start recording
+    setAudioUrl(null);
     if (mediaRecorder && mediaRecorder.state !== 'recording') {
-      mediaRecorder.start(1000); // collect data every second
+      mediaRecorder.start();
     }
-    
-    // Start the timer
     timerRef.current = window.setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1) {
-          // Time's up, stop recording and move to next question
           stopAnswering();
           return 0;
         }
@@ -125,60 +125,92 @@ const InterviewPage: React.FC = () => {
     if (timerRef.current) {
       window.clearInterval(timerRef.current);
     }
-    
-    // Stop recording
     if (mediaRecorder && mediaRecorder.state === 'recording') {
       mediaRecorder.stop();
     }
-    
     setIsRecording(false);
     setIsAnswering(false);
-    setCompletedQuestions([...completedQuestions, currentQuestionIndex]);
-    
-    // If this was the last question, end the session
-    if (currentQuestionIndex === questions.length - 1) {
-      setIsSessionComplete(true);
+    setCompletedQuestions((prev) => prev.includes(currentQuestionIndex) ? prev : [...prev, currentQuestionIndex]);
+    // Do NOT end session here; let nextQuestion handle it
+  };
+  
+  // Handle audio blob and create URL for playback
+  useEffect(() => {
+    if (audioChunks.length > 0) {
+      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      setAudioUrl(URL.createObjectURL(audioBlob));
     }
+  }, [audioChunks]);
+  
+  // Utility to convert Blob to base64
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64data = reader.result?.toString().split(',')[1];
+        resolve(base64data || '');
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   };
   
   const nextQuestion = async () => {
     setIsLoading(true);
     setApiError(null);
-    
     try {
-      // If we have an answer, send it to the API to get the next question
-      if (currentAnswer.trim() || audioChunks.length > 0) {
-        // In a real app, you might want to send the audio or transcribed text
-        const result = await getNextQuestion(
-          'get_next_question',
-          state?.user || 'guest',
-          currentAnswer
-        );
-        
-        if (result.status === 200 && result.data.question) {
-          // Add the new question to our list
-          const newQuestion = result.data.question;
-          setQuestions([...questions, newQuestion]);
+      let result;
+      let audioBlob = audioChunks.length > 0 ? new Blob(audioChunks, { type: 'audio/webm' }) : null;
+      let payload: any = { username: state?.user || 'guest' };
+      if (audioBlob) {
+        const base64Audio = await blobToBase64(audioBlob);
+        payload.audio = base64Audio;
+      }
+      if (currentAnswer) {
+        payload.text = currentAnswer;
+      }
+      if (interviewMode === 'comp2') {
+        result = await axios.post('http://192.168.1.62:7777/api/v1/get_next_question_comp2', payload, {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (result.status === 200 && result.data.next_question_id) {
+          setQuestions([...questions, result.data.next_question_id]);
           setCurrentQuestionIndex(currentQuestionIndex + 1);
-          setTimeRemaining(120); // Reset timer for new question
-          setCurrentAnswer(''); // Clear the current answer
-          setAudioChunks([]); // Clear audio chunks
+          setTimeRemaining(120);
+          setCurrentAnswer('');
+          setAudioChunks([]);
+          setAudioUrl(null);
           return;
+        } else if (result.data.message && result.data.message.includes('No more questions')) {
+          setIsSessionComplete(true);
+        }
+      } else if (interviewMode === 'comp3') {
+        result = await axios.post('http://192.168.1.62:7777/api/v1/get_next_question_comp3', payload, {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (result.status === 200 && result.data.next_question) {
+          setQuestions([...questions, result.data.next_question]);
+          setCurrentQuestionIndex(currentQuestionIndex + 1);
+          setTimeRemaining(120);
+          setCurrentAnswer('');
+          setAudioChunks([]);
+          setAudioUrl(null);
+          return;
+        } else if (result.data.status === 'completed') {
+          setIsSessionComplete(true);
         }
       }
-      
-      // Fallback behavior if no response from API
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
-        setTimeRemaining(120); // Reset timer for new question
-        setCurrentAnswer(''); // Clear the current answer
-        setAudioChunks([]); // Clear audio chunks
+        setTimeRemaining(120);
+        setCurrentAnswer('');
+        setAudioChunks([]);
+        setAudioUrl(null);
       } else {
         setIsSessionComplete(true);
       }
     } catch (error: any) {
-      console.error("Error getting next question:", error);
-      setApiError(error.response?.data?.message || error.message || "Failed to retrieve the next question.");
+      setApiError(error.response?.data?.message || error.message || 'Failed to retrieve the next question.');
     } finally {
       setIsLoading(false);
     }
@@ -195,15 +227,19 @@ const InterviewPage: React.FC = () => {
   const viewFeedback = async () => {
     setIsLoading(true);
     try {
-      const result = await getFeedback('get_feedback', state?.user || 'guest');
+      let result;
+      if (interviewMode === 'comp2') {
+        result = await getUserResultComp2('get_user_result_comp2', state?.user || 'guest');
+      } else {
+        result = await getFeedback('get_feedback', state?.user || 'guest');
+      }
       if (result.status === 200) {
         // In a real app, you would navigate to a feedback page with the results
-        console.log("Feedback received:", result.data);
+        console.log('Feedback received:', result.data);
         // navigate('/feedback', { state: { feedback: result.data } });
       }
     } catch (error) {
-      console.error("Error getting feedback:", error);
-      setApiError("Failed to retrieve feedback. Please try again.");
+      setApiError('Failed to retrieve feedback. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -297,11 +333,18 @@ const InterviewPage: React.FC = () => {
                 </div>
               )}
               
+              {audioUrl && (
+                <div className="mb-4">
+                  <audio controls src={audioUrl} />
+                </div>
+              )}
+              
               <div className="flex space-x-4">
                 {!isAnswering ? (
                   <Button
                     onClick={startAnswering}
                     className="flex items-center"
+                    disabled={isSessionComplete || isLoading}
                   >
                     <Play className="w-4 h-4 mr-2" />
                     Start Recording
@@ -311,23 +354,21 @@ const InterviewPage: React.FC = () => {
                     variant="danger"
                     onClick={stopAnswering}
                     className="flex items-center"
+                    disabled={isSessionComplete || isLoading}
                   >
                     <Square className="w-4 h-4 mr-2" />
                     Stop Recording
                   </Button>
                 )}
-                
-                {completedQuestions.includes(currentQuestionIndex) && (
-                  <Button
-                    variant="outline"
-                    onClick={nextQuestion}
-                    className="flex items-center"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Loading...' : 'Next Question'}
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  onClick={nextQuestion}
+                  className="flex items-center"
+                  disabled={isLoading || isAnswering || isSessionComplete || completedQuestions.includes(currentQuestionIndex) === false}
+                >
+                  {isLoading ? 'Loading...' : 'Next Question'}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
               </div>
               
               {apiError && (

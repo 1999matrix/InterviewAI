@@ -2,18 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Base styles for dark mode */
+@layer base {
+  .dark {
+    color-scheme: dark;
+  }
+  
+  .dark body {
+    @apply bg-gray-900 text-gray-100;
+  }
+}
+
 /* Custom Styles */
 @layer components {
   .nav-link {
-    @apply relative inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors;
+    @apply relative inline-flex items-center px-1 pt-1 text-sm font-medium transition-colors;
+    @apply text-gray-700 hover:text-blue-600;
+    @apply dark:text-gray-300 dark:hover:text-blue-400;
   }
   
   .nav-indicator {
-    @apply absolute inset-x-0 bottom-0 h-0.5 bg-blue-600 scale-x-0 transition-transform duration-200 ease-in-out group-hover:scale-x-100;
+    @apply absolute inset-x-0 bottom-0 h-0.5 scale-x-0 transition-transform duration-200 ease-in-out group-hover:scale-x-100;
+    @apply bg-blue-600 dark:bg-blue-400;
   }
   
   .input-field {
-    @apply appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500;
+    @apply appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none;
+    @apply border-gray-300 focus:ring-blue-500 focus:border-blue-500;
+    @apply dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:placeholder-gray-500 dark:focus:ring-blue-400 dark:focus:border-blue-400;
+  }
+
+  /* Card styles with hover effects */
+  .card {
+    @apply rounded-xl shadow-sm transition-all duration-200 hover:shadow-md;
+    @apply bg-white dark:bg-gray-800;
+  }
+  
+  .card-interactive {
+    @apply card hover:shadow-xl hover:scale-[1.02];
   }
 }
 
@@ -23,15 +49,29 @@
   stroke: #f3f4f6;
 }
 
+.dark .recharts-cartesian-grid-horizontal line,
+.dark .recharts-cartesian-grid-vertical line {
+  stroke: #374151;
+}
+
+.dark .recharts-text {
+  fill: #9ca3af;
+}
+
 /* Activity heatmap custom styles */
 .react-calendar-heatmap .color-scale-1 { fill: #dbeafe; }
 .react-calendar-heatmap .color-scale-2 { fill: #93c5fd; }
 .react-calendar-heatmap .color-scale-3 { fill: #60a5fa; }
 .react-calendar-heatmap .color-scale-4 { fill: #2563eb; }
 
+.dark .react-calendar-heatmap .color-scale-1 { fill: #1e40af; }
+.dark .react-calendar-heatmap .color-scale-2 { fill: #2563eb; }
+.dark .react-calendar-heatmap .color-scale-3 { fill: #3b82f6; }
+.dark .react-calendar-heatmap .color-scale-4 { fill: #60a5fa; }
+
 /* Basic styles */
 body {
-  @apply antialiased text-gray-900;
+  @apply antialiased text-gray-900 bg-gray-50 transition-colors duration-200;
 }
 
 /* Animation for pulsing elements */
@@ -46,4 +86,19 @@ body {
 
 .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Hover animations */
+.hover-lift {
+  @apply transition-transform duration-200 hover:scale-105;
+}
+
+.hover-glow {
+  @apply transition-all duration-300;
+  @apply hover:shadow-lg hover:shadow-blue-500/20;
+}
+
+/* Dark mode transitions */
+.theme-transition {
+  @apply transition-colors duration-200;
 }

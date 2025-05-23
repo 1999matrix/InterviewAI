@@ -12,32 +12,32 @@ const Navbar: React.FC = () => {
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   
   return (
-    <nav className="bg-white shadow-sm py-4 fixed w-full top-0 z-50">
-      <div className="container mx-auto px-4 md:px-6 flex justify-between items-center">
-        <Link to="/" className="flex items-center space-x-2">
+    <nav className="bg-white shadow-sm py-2 fixed w-full top-0 z-50">
+      <div className="container mx-auto px-2 md:px-4 flex justify-between items-center">
+        <Link to="/" className="flex items-center space-x-1.5">
           <Logo />
-          <span className="text-xl font-bold text-blue-600">InterviewAI</span>
+          <span className="text-lg font-bold text-blue-600">InterviewAI</span>
         </Link>
         
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center space-x-8">
+        <div className="hidden md:flex items-center space-x-4">
           <NavLinks />
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
             {isAuthenticated ? (
-              <Button onClick={logout} variant="outline">
+              <Button onClick={logout} variant="outline" size="sm">
                 Logout
               </Button>
             ) : (
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
                 <Link to="/login">
-                  <Button variant="outline">
-                    <LogIn className="w-4.5 h-4.5 mr-2" />
+                  <Button variant="outline" size="sm">
+                    <LogIn className="w-4 h-4 mr-1" />
                     Login
                   </Button>
                 </Link>
                 <Link to="/signup">
-                  <Button>Sign Up</Button>
+                  <Button size="sm">Sign Up</Button>
                 </Link>
               </div>
             )}
@@ -91,25 +91,25 @@ const Navbar: React.FC = () => {
 };
 
 const NavLinks: React.FC = () => (
-  <div className="flex items-center space-x-6">
+  <div className="flex items-center space-x-3">
     <Link to="/interview/profile" className="nav-link group">
       <div className="flex items-center">
-        <Brain className="w-4 h-4 mr-1.5" />
-        <span>Interview Prep</span>
+        <Brain className="w-4 h-4 mr-1" />
+        <span className="text-base">Interview Prep</span>
       </div>
       <div className="nav-indicator"></div>
     </Link>
     <Link to="/resume" className="nav-link group">
       <div className="flex items-center">
-        <FileText className="w-4 h-4 mr-1.5" />
-        <span>ATS Resume</span>
+        <FileText className="w-4 h-4 mr-1" />
+        <span className="text-base">ATS Resume</span>
       </div>
       <div className="nav-indicator"></div>
     </Link>
     <Link to="/pricing" className="nav-link group">
       <div className="flex items-center">
-        <DollarSign className="w-4 h-4 mr-1.5" />
-        <span>Pricing</span>
+        <DollarSign className="w-4 h-4 mr-1" />
+        <span className="text-base">Pricing</span>
       </div>
       <div className="nav-indicator"></div>
     </Link>
