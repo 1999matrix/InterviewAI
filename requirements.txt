@@ -10,3 +10,4 @@ openpyxl
 PyMuPDF==1.23.8
 mysql-connector-python
 groq==0.3.1
+pygame==2.6.1

@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file
 from src.component.comp1.start_test import QuestionFetcher
 from src.component.comp1.next import QuestionManagerComp1
 from src.component.comp1.text_to_db import TextAppender
@@ -17,6 +17,10 @@ from src.database_config.question_db.inserting_data_to_mysql import python_table
 from src.database_config.user_manager.user_manager import create_user_history_table
 from src.database_config.user_session.user_session_tables import create_user_test_info_table_1, create_user_test_info_table_2, create_user_test_info_table_3
 import os
+from voice_models.eddge_tts.eddge_tts import TextToSpeechConverter
+import io
+import base64
+import tempfile
 
 load_dotenv()
 
@@ -171,12 +175,21 @@ def handle_start_test_comp2():
                 "message": str(e)
             }), 500
 
-        # Return successful response
-        return jsonify({
-            'status': 'success',
-            'status_code': 200,
-            'question': str(first_question)
-        }), 200
+        # Return successful response with audio
+        # Generate audio for the first question
+        tts_converter = TextToSpeechConverter()
+        audio_bytes = tts_converter.convert_text_to_mp3_bytes(str(first_question))
+        # Write to a temp file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
+            tmp_file.write(audio_bytes)
+            tmp_file.flush()
+            tmp_file_path = tmp_file.name
+        response = send_file(tmp_file_path, mimetype='audio/mpeg', as_attachment=True, download_name='question.mp3')
+        response.headers['X-Question-Text'] = str(first_question)
+        @response.call_on_close
+        def cleanup():
+            os.remove(tmp_file_path)
+        return response
 
     except Exception as e:
         # Catch any unexpected errors
@@ -201,7 +214,19 @@ def get_next_question_comp2():
     next_question_id = question_manager.get_next_question_id_comp2(username)
 
     if next_question_id is not None:
-        return jsonify({'next_question_id': next_question_id}), 200
+        # Generate audio for the next question
+        tts_converter = TextToSpeechConverter()
+        audio_bytes = tts_converter.convert_text_to_mp3_bytes(str(next_question_id))
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
+            tmp_file.write(audio_bytes)
+            tmp_file.flush()
+            tmp_file_path = tmp_file.name
+        response = send_file(tmp_file_path, mimetype='audio/mpeg', as_attachment=True, download_name='question.mp3')
+        response.headers['X-Question-Text'] = str(next_question_id)
+        @response.call_on_close
+        def cleanup():
+            os.remove(tmp_file_path)
+        return response
     else:
         # Return a message with status code 200 if no more questions remain
         return jsonify({'message': 'No more questions left for this user'}), 200
@@ -321,14 +346,19 @@ def handle_start_test_comp3():
                 "message": str(e)
             }), 500
 
-        # Return successful response
-        return jsonify({
-            'status': 'success',
-            'status_code': 200,
-            'question': result['question'],
-            'total_questions': result['total_questions']
-        }), 200
-
+        # Return mp3 audio file for the first question
+        tts_converter = TextToSpeechConverter()
+        audio_bytes = tts_converter.convert_text_to_mp3_bytes(str(result['question']))
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
+            tmp_file.write(audio_bytes)
+            tmp_file.flush()
+            tmp_file_path = tmp_file.name
+        response = send_file(tmp_file_path, mimetype='audio/mpeg', as_attachment=True, download_name='question.mp3')
+        response.headers['X-Question-Text'] = str(result['question'])
+        @response.call_on_close
+        def cleanup():
+            os.remove(tmp_file_path)
+        return response
     except Exception as e:
         return jsonify({
             "error": "An unexpected error occurred",
@@ -345,15 +375,15 @@ def get_next_question_comp3():
             return jsonify({"error": "No input data provided"}), 400
 
         username = data.get('username')
-        response = data.get('response')
+        response_text = data.get('response')
 
         if not username:
             return jsonify({"error": "Username is required"}), 400
-        if not response:
+        if not response_text:
             return jsonify({"error": "Response is required"}), 400
 
         question_manager = QuestionManagerComp3()
-        result = question_manager.process_response_and_get_next(username, response)
+        result = question_manager.process_response_and_get_next(username, response_text)
 
         if result['status'] == 'completed':
             return jsonify({
@@ -361,13 +391,19 @@ def get_next_question_comp3():
                 'message': result['message']
             }), 200
 
-        return jsonify({
-            'status': 'success',
-            'evaluation': result['evaluation'],
-            'next_question': result['next_question'],
-            'questions_remaining': result['questions_remaining']
-        }), 200
-
+        # Return mp3 audio file for the next question
+        tts_converter = TextToSpeechConverter()
+        audio_bytes = tts_converter.convert_text_to_mp3_bytes(str(result['next_question']))
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
+            tmp_file.write(audio_bytes)
+            tmp_file.flush()
+            tmp_file_path = tmp_file.name
+        response = send_file(tmp_file_path, mimetype='audio/mpeg', as_attachment=True, download_name='question.mp3')
+        response.headers['X-Question-Text'] = str(result['next_question'])
+        @response.call_on_close
+        def cleanup():
+            os.remove(tmp_file_path)
+        return response
     except Exception as e:
         return jsonify({
             "error": "An unexpected error occurred",
