@@ -1,313 +1,466 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Play, Square, Clock, ArrowRight, CheckCircle, Send } from 'lucide-react';
-import Button from '../../components/ui/Button';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Mic, MicOff, Clock, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getNextQuestionComp2, getNextQuestionComp3, getUserResultComp2, getFeedback } from '../../services/Sharedservice';
 import axios from 'axios';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
-// Mock interview questions
-const mockQuestions = [
+// API Configuration
+const API_BASE = 'http://192.168.1.73:7777/api/v1';
+
+// Mock questions fallback
+const MOCK_QUESTIONS = [
   "Tell me about your experience with React and how you've used it in previous projects.",
   "How do you handle state management in large-scale applications?",
   "Describe a challenging technical problem you solved recently.",
   "How do you approach testing in your frontend applications?",
-  "What's your experience with TypeScript and how has it improved your development workflow?",
-  "How do you stay updated with the latest web development trends and technologies?",
-  "Describe your workflow when implementing a new feature from design to deployment.",
-  "How do you optimize the performance of web applications?",
-  "Tell me about a time when you had to refactor a significant portion of code. How did you approach it?",
-  "How do you handle errors and debugging in your applications?",
 ];
 
-interface LocationState {
-  question?: string[] | string;
-  interviewType?: string;
-  user?: string;
-  interviewMode?: string;
-}
-
-const InterviewPage: React.FC = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const state = location.state as LocationState;
-  const [currentAnswer, setCurrentAnswer] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  
-  // Process questions from API or use mock questions
-  const processQuestions = () => {
-    if (state?.question) {
-      if (Array.isArray(state.question)) {
-        return state.question;
-      } else if (typeof state.question === 'string') {
-        try {
-          // If the API returns a JSON string, attempt to parse it
-          const parsedQuestions = JSON.parse(state.question);
-          return Array.isArray(parsedQuestions) ? parsedQuestions : [state.question];
-        } catch (e) {
-          // If parsing fails, treat it as a single question
-          return [state.question];
-        }
-      }
-    }
-    return mockQuestions;
+// Button Component
+type ButtonProps = {
+  children: React.ReactNode;
+  onClick: React.MouseEventHandler<HTMLButtonElement>;
+  disabled?: boolean;
+  variant?: 'primary' | 'danger' | 'outline';
+  className?: string;
+  [key: string]: any;
+};
+const Button: React.FC<ButtonProps> = ({ 
+  children, 
+  onClick, 
+  disabled = false, 
+  variant = 'primary', 
+  className = '', 
+  ...props 
+}) => {
+  const baseClasses = "px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center justify-center";
+  const variants: Record<string, string> = {
+    primary: "bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300",
+    danger: "bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-300",
+    outline: "border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:bg-gray-100"
   };
   
-  const [questions, setQuestions] = useState(processQuestions());
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  return (
+    <button
+      className={`${baseClasses} ${variants[variant]} ${className} ${disabled ? 'cursor-not-allowed' : ''}`}
+      onClick={onClick}
+      disabled={disabled}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
+// Recording Animation Component
+type RecordingAnimationProps = {
+  isRecording: boolean;
+  size?: 'small' | 'large';
+};
+const RecordingAnimation: React.FC<RecordingAnimationProps> = ({ isRecording, size = 'large' }) => {
+  const sizeClasses: Record<'small' | 'large', string> = {
+    small: 'w-3 h-3',
+    large: 'w-24 h-24'
+  };
+
+  if (!isRecording) return null;
+
+  return (
+    <div className="flex items-center justify-center">
+      <div className={`${sizeClasses[size]} relative`}>
+        {/* Pulsing circles */}
+        <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20"></div>
+        <div className="absolute inset-2 bg-red-500 rounded-full animate-ping opacity-40 animation-delay-75"></div>
+        <div className="absolute inset-4 bg-red-600 rounded-full animate-pulse"></div>
+        
+        {/* Center microphone icon */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Mic className="w-6 h-6 text-white" />
+        </div>
+      </div>
+      
+      {size === 'large' && (
+        <div className="ml-4">
+          <div className="text-red-600 font-semibold animate-pulse">Recording...</div>
+          <div className="text-sm text-gray-500">Speak clearly into your microphone</div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Live Speech Indicator
+type LiveSpeechIndicatorProps = {
+  transcript: string;
+  isListening: boolean;
+};
+const LiveSpeechIndicator: React.FC<LiveSpeechIndicatorProps> = ({ transcript, isListening }) => {
+  if (!isListening || !transcript) return null;
+
+  return (
+    <div className="mb-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg animate-fadeIn">
+      <div className="flex items-center mb-2">
+        <div className="flex space-x-1 mr-2">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce animation-delay-100"></div>
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce animation-delay-200"></div>
+        </div>
+        <span className="font-medium text-green-800">Live Speech Recognition</span>
+      </div>
+      <p className="text-green-700 italic">"{transcript}"</p>
+    </div>
+  );
+};
+
+// Custom Hook for API calls
+const useInterviewAPI = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const callAPI = useCallback(async (endpoint: string, params: any, method: 'GET' | 'POST' = 'GET') => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      let response;
+      if (method === 'GET') {
+        response = await axios.get(`${API_BASE}/${endpoint}`, { params });
+      } else {
+        response = await axios.post(`${API_BASE}/${endpoint}`, params);
+      }
+      return response.data;
+    } catch (err: unknown) {
+      let errorMessage = 'An unexpected error occurred';
+      if (typeof err === 'object' && err !== null) {
+        if ('response' in err && (err as any).response?.data) {
+          errorMessage = (err as any).response.data.error || (err as any).response.data.message || errorMessage;
+        } else if ('message' in err) {
+          errorMessage = (err as any).message;
+        }
+      }
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { callAPI, loading, error, setError };
+};
+
+// Custom Hook for Speech Recognition
+const useSpeechRecorder = () => {
+  const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition,
+    isMicrophoneAvailable
+  } = useSpeechRecognition();
+
   const [isRecording, setIsRecording] = useState(false);
-  const [isAnswering, setIsAnswering] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(120); // 2 minutes per question
+  const [finalTranscript, setFinalTranscript] = useState('');
+
+  const startRecording = useCallback(() => {
+    if (!browserSupportsSpeechRecognition || !isMicrophoneAvailable) {
+      throw new Error('Speech recognition not available');
+    }
+
+    resetTranscript();
+    setFinalTranscript('');
+    setIsRecording(true);
+    
+    SpeechRecognition.startListening({ 
+      continuous: true,
+      language: 'en-US'
+    });
+  }, [browserSupportsSpeechRecognition, isMicrophoneAvailable, resetTranscript]);
+
+  const stopRecording = useCallback(() => {
+    SpeechRecognition.stopListening();
+    setIsRecording(false);
+    setFinalTranscript(transcript);
+  }, [transcript]);
+
+  return {
+    transcript,
+    listening,
+    isRecording,
+    finalTranscript,
+    startRecording,
+    stopRecording,
+    resetTranscript,
+    browserSupportsSpeechRecognition,
+    isMicrophoneAvailable
+  };
+};
+
+// Main Interview Component
+const InterviewPage = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const state = location.state || {};
+  
+  // State management
+  const [questions, setQuestions] = useState(() => {
+    if (state.question) {
+      try {
+        return Array.isArray(state.question) ? state.question : 
+               typeof state.question === 'string' ? JSON.parse(state.question) : 
+               [state.question];
+      } catch {
+        return [state.question];
+      }
+    }
+    return MOCK_QUESTIONS;
+  });
+
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentAnswer, setCurrentAnswer] = useState('');
+  const [timeRemaining, setTimeRemaining] = useState(120);
   const [completedQuestions, setCompletedQuestions] = useState<number[]>([]);
   const [isSessionComplete, setIsSessionComplete] = useState(false);
-  const [interviewMode, setInterviewMode] = useState(state?.interviewMode || 'comp2');
-  
+  const [isAnswering, setIsAnswering] = useState(false);
+  const [answerText, setAnswerText] = useState('');
+
+  const interviewMode = state.interviewMode || 'comp2';
+  const username = state.user || 'guest';
+  const interviewType = state.interviewType || 'technical';
+
+  // Custom hooks
+  const { callAPI, loading, error, setError } = useInterviewAPI();
+  const {
+    transcript,
+    listening,
+    isRecording,
+    finalTranscript,
+    startRecording,
+    stopRecording,
+    resetTranscript,
+    browserSupportsSpeechRecognition,
+    isMicrophoneAvailable
+  } = useSpeechRecorder();
+
+  // Timer management
   const timerRef = useRef<number | null>(null);
-  
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) window.clearInterval(timerRef.current);
-    };
-  }, []);
 
-  // Initialize media recorder
-  useEffect(() => {
-    const initMediaRecorder = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const recorder = new MediaRecorder(stream);
-
-        recorder.ondataavailable = (e) => {
-          if (e.data.size > 0) {
-            setAudioChunks((chunks) => [...chunks, e.data]);
-          }
-        };
-
-        recorder.onstop = () => {
-          // Speech recognition or sending to API could be done here
-          console.log("Recording stopped, processing audio...");
-        };
-
-        setMediaRecorder(recorder);
-      } catch (err) {
-        console.error("Error accessing microphone:", err);
-        setApiError("Could not access microphone. Please check your device settings.");
-      }
-    };
-
-    initMediaRecorder();
-  }, []);
-  
-  const startAnswering = () => {
-    setIsAnswering(true);
-    setIsRecording(true);
-    setCurrentAnswer('');
-    setAudioChunks([]);
-    setAudioUrl(null);
-    if (mediaRecorder && mediaRecorder.state !== 'recording') {
-      mediaRecorder.start();
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) {
+      window.clearInterval(timerRef.current);
+      timerRef.current = null;
     }
+  }, []);
+
+  // Next question handling (move this up so it can be referenced in startTimer)
+  const handleNextQuestion = useCallback(async () => {
+    const responseText = answerText;
+    if (!responseText.trim()) {
+      setError('Please provide an answer before proceeding.');
+      return;
+    }
+    try {
+      let result: any;
+      if (interviewMode === 'comp2') {
+        result = await callAPI('get_next_question_comp2', {
+          username,
+          text: responseText
+        });
+        if (result.next_question_id) {
+          setQuestions((prev: string[]) => [...prev, result.next_question_id]);
+          setCurrentQuestionIndex((prev: number) => prev + 1);
+        } else if (result.message?.includes('No more questions')) {
+          setIsSessionComplete(true);
+          return;
+        }
+      } else if (interviewMode === 'comp3') {
+        result = await callAPI('get_next_question_comp3', {
+          username,
+          response: responseText
+        }, 'POST');
+        if (result.status === 'completed') {
+          setIsSessionComplete(true);
+          return;
+        } else if (result.status === 'success' && result.next_question) {
+          setQuestions((prev: string[]) => [...prev, result.next_question]);
+          setCurrentQuestionIndex((prev: number) => prev + 1);
+        }
+      }
+      // Reset state for next question
+      setTimeRemaining(120);
+      setAnswerText('');
+      resetTranscript();
+    } catch (err: unknown) {
+      // Error is handled by the hook
+      if (err instanceof Error) {
+        console.error('Next question error:', err.message);
+      } else {
+        console.error('Next question error:', err);
+      }
+    }
+  }, [answerText, interviewMode, username, callAPI, resetTranscript]);
+
+  const startTimer = useCallback(() => {
     timerRef.current = window.setInterval(() => {
-      setTimeRemaining((prev) => {
+      setTimeRemaining(prev => {
         if (prev <= 1) {
-          stopAnswering();
+          handleStopAnswering();
+          // Auto-submit and move to next question or finish
+          setTimeout(() => {
+            if (currentQuestionIndex < questions.length - 1) {
+              handleNextQuestion();
+            } else {
+              setIsSessionComplete(true);
+            }
+          }, 500); // slight delay to ensure transcript is finalized
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-  };
-  
-  const stopAnswering = () => {
-    if (timerRef.current) {
-      window.clearInterval(timerRef.current);
-    }
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-      mediaRecorder.stop();
-    }
-    setIsRecording(false);
-    setIsAnswering(false);
-    setCompletedQuestions((prev) => prev.includes(currentQuestionIndex) ? prev : [...prev, currentQuestionIndex]);
-    // Do NOT end session here; let nextQuestion handle it
-  };
-  
-  // Handle audio blob and create URL for playback
-  useEffect(() => {
-    if (audioChunks.length > 0) {
-      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-      setAudioUrl(URL.createObjectURL(audioBlob));
-    }
-  }, [audioChunks]);
-  
-  // Utility to convert Blob to base64
-  const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64data = reader.result?.toString().split(',')[1];
-        resolve(base64data || '');
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
-  
-  const nextQuestion = async () => {
-    setIsLoading(true);
-    setApiError(null);
+  }, [currentQuestionIndex, questions.length, handleNextQuestion]);
+
+  // Answer handling
+  const handleStartAnswering = useCallback(async () => {
     try {
-      let result;
-      let audioBlob = audioChunks.length > 0 ? new Blob(audioChunks, { type: 'audio/webm' }) : null;
-      let payload: any = { username: state?.user || 'guest' };
-      if (audioBlob) {
-        const base64Audio = await blobToBase64(audioBlob);
-        payload.audio = base64Audio;
-      }
-      if (currentAnswer) {
-        payload.text = currentAnswer;
-      }
-      if (interviewMode === 'comp2') {
-        result = await axios.post('http://192.168.1.62:7777/api/v1/get_next_question_comp2', payload, {
-          headers: { 'Content-Type': 'application/json' }
-        });
-        if (result.status === 200 && result.data.next_question_id) {
-          setQuestions([...questions, result.data.next_question_id]);
-          setCurrentQuestionIndex(currentQuestionIndex + 1);
-          setTimeRemaining(120);
-          setCurrentAnswer('');
-          setAudioChunks([]);
-          setAudioUrl(null);
-          return;
-        } else if (result.data.message && result.data.message.includes('No more questions')) {
-          setIsSessionComplete(true);
-        }
-      } else if (interviewMode === 'comp3') {
-        result = await axios.post('http://192.168.1.62:7777/api/v1/get_next_question_comp3', payload, {
-          headers: { 'Content-Type': 'application/json' }
-        });
-        if (result.status === 200 && result.data.next_question) {
-          setQuestions([...questions, result.data.next_question]);
-          setCurrentQuestionIndex(currentQuestionIndex + 1);
-          setTimeRemaining(120);
-          setCurrentAnswer('');
-          setAudioChunks([]);
-          setAudioUrl(null);
-          return;
-        } else if (result.data.status === 'completed') {
-          setIsSessionComplete(true);
-        }
-      }
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-        setTimeRemaining(120);
-        setCurrentAnswer('');
-        setAudioChunks([]);
-        setAudioUrl(null);
-      } else {
-        setIsSessionComplete(true);
-      }
-    } catch (error: any) {
-      setApiError(error.response?.data?.message || error.message || 'Failed to retrieve the next question.');
-    } finally {
-      setIsLoading(false);
+      setIsAnswering(true);
+      setError(null);
+      await startRecording();
+      startTimer();
+    } catch (err: unknown) {
+      setError((err as Error).message);
+      setIsAnswering(false);
     }
-  };
-  
-  // Format time as MM:SS
-  const formatTime = (seconds: number) => {
+  }, [startRecording, startTimer, setError]);
+  const handleStopAnswering = useCallback(() => {
+    stopTimer();
+    stopRecording();
+    setIsAnswering(false);
+    setCompletedQuestions((prev: number[]) =>
+      prev.includes(currentQuestionIndex) ? prev : [...prev, currentQuestionIndex]
+    );
+    console.log('Transcript (should update soon):', transcript);
+  }, [stopTimer, stopRecording, currentQuestionIndex, transcript]);
+
+  // Set answerText when transcript updates and not answering
+  useEffect(() => {
+    if (!isAnswering && transcript.trim()) {
+      setAnswerText(transcript);
+    }
+  }, [isAnswering, transcript]);
+
+  // View feedback
+  const handleViewFeedback = useCallback(async () => {
+    try {
+      const endpoint = interviewMode === 'comp2' ? 'get_user_result_comp2' : 'get_feedback';
+      const result: any = await callAPI(endpoint, { username });
+      console.log('Feedback:', result);
+      // navigate('/feedback', { state: { feedback: result } });
+    } catch (err: unknown) {
+      // Error handled by hook
+    }
+  }, [interviewMode, username, callAPI]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopTimer();
+      if (isRecording) {
+        stopRecording();
+      }
+    };
+  }, [stopTimer, isRecording, stopRecording]);
+
+  // Format time
+  const formatTime = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-  
-  // View feedback after completing the session
-  const viewFeedback = async () => {
-    setIsLoading(true);
-    try {
-      let result;
-      if (interviewMode === 'comp2') {
-        result = await getUserResultComp2('get_user_result_comp2', state?.user || 'guest');
-      } else {
-        result = await getFeedback('get_feedback', state?.user || 'guest');
-      }
-      if (result.status === 200) {
-        // In a real app, you would navigate to a feedback page with the results
-        console.log('Feedback received:', result.data);
-        // navigate('/feedback', { state: { feedback: result.data } });
-      }
-    } catch (error) {
-      setApiError('Failed to retrieve feedback. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  // Handle text answer input
-  const handleAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setCurrentAnswer(e.target.value);
-  };
-  
+  }, []);
+
+  // Toast for transcribing
+  const TranscribingToast = () => (
+    <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
+      <div className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg animate-fadeIn">
+        <svg className="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+        </svg>
+        Transcribing...
+      </div>
+    </div>
+  );
+
+  // Browser support check
+  if (!browserSupportsSpeechRecognition) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-4">Speech Recognition Not Supported</h2>
+          <p className="text-gray-600 mb-6">
+            Please use Chrome, Edge, or Safari for the best experience.
+          </p>
+          <Button onClick={() => navigate(-1)}>Go Back</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Interview Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-gray-100">
+      {/* Transcribing Toast */}
+      {listening && <TranscribingToast />}
+
+      {/* Header */}
+      <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-xl font-semibold">{state?.interviewType === 'coding' ? 'Coding & Technical' : 'Theory & Behavioral'} Interview</h1>
-              <p className="text-gray-600 text-sm">{state?.user || 'Guest'}</p>
+              <h1 className="text-xl font-semibold">
+                {interviewType === 'coding' ? 'Coding & Technical' : 'Theory & Behavioral'} Interview
+              </h1>
+              <p className="text-gray-600 text-sm">{username} - {interviewMode.toUpperCase()}</p>
             </div>
             
             <div className="flex items-center space-x-4">
               <div className="bg-blue-50 text-blue-700 py-1 px-3 rounded-full text-sm font-medium flex items-center">
                 <Clock className="w-4 h-4 mr-1.5" />
-                <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
+                Question {currentQuestionIndex + 1} of {questions.length}
               </div>
               
-              {isAnswering && (
+              {isRecording && (
                 <div className="bg-red-50 text-red-700 py-1 px-3 rounded-full text-sm font-medium flex items-center">
-                  <div className="w-2 h-2 bg-red-600 rounded-full mr-1.5 animate-pulse"></div>
-                  <span>Recording</span>
+                  <RecordingAnimation isRecording={true} size="small" />
+                  <span className="ml-2">Recording</span>
                 </div>
               )}
             </div>
           </div>
         </div>
       </div>
-      
-      {/* Main Content */}
-      <div className="flex-1 container mx-auto px-6 py-8 flex flex-col md:flex-row gap-8">
-        {/* Question Panel */}
-        <div className="md:w-3/4 space-y-6">
+
+      <div className="container mx-auto px-6 py-8 flex gap-8">
+        {/* Main Content */}
+        <div className="flex-1 space-y-6">
           {isSessionComplete ? (
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-              <div className="bg-green-100 text-green-700 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle size={36} />
-              </div>
+            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+              <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
               <h2 className="text-2xl font-bold mb-4">Interview Complete!</h2>
               <p className="text-gray-600 mb-8">
-                Congratulations on completing your interview session. 
                 Your responses are being analyzed and feedback will be available shortly.
               </p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <Button variant="outline">
-                  Review Answers
-                </Button>
-                <Button onClick={viewFeedback} disabled={isLoading}>
-                  View Feedback
+              <div className="flex justify-center gap-4">
+                <Button variant="outline" onClick={() => {}}>Review Answers</Button>
+                <Button onClick={handleViewFeedback} disabled={loading}>
+                  {loading ? 'Loading...' : 'View Feedback'}
                 </Button>
               </div>
-              {apiError && (
-                <p className="text-red-500 text-sm mt-3">{apiError}</p>
-              )}
             </div>
           ) : (
-            <div className="bg-white rounded-xl shadow-sm p-8">
+            <div className="bg-white rounded-xl shadow-lg p-8">
               <div className="mb-8">
-                <h2 className="text-lg font-semibold text-gray-700 mb-2">Question {currentQuestionIndex + 1}</h2>
+                <h2 className="text-lg font-semibold text-gray-700 mb-2">
+                  Question {currentQuestionIndex + 1}
+                </h2>
                 <p className="text-xl">{questions[currentQuestionIndex]}</p>
               </div>
               
@@ -319,119 +472,111 @@ const InterviewPage: React.FC = () => {
                 <span className="font-medium">{formatTime(timeRemaining)}</span>
               </div>
               
-              {/* Text Answer Area - visible when answering */}
-              {isAnswering && (
-                <div className="mb-4">
-                  <textarea
-                    value={currentAnswer}
-                    onChange={handleAnswerChange}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Type your answer here (optional - you can also just speak)..."
-                    rows={4}
-                    disabled={!isAnswering}
-                  />
+              {/* Recording Animation */}
+              {isRecording && (
+                <div className="mb-6 text-center">
+                  <RecordingAnimation isRecording={isRecording} size="large" />
                 </div>
               )}
               
-              {audioUrl && (
-                <div className="mb-4">
-                  <audio controls src={audioUrl} />
+              {/* Live Speech */}
+              <LiveSpeechIndicator transcript={transcript} isListening={listening} />
+              
+              {/* Always show current transcript (live or after stop) */}
+              {(transcript || answerText) && (
+                <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-400 rounded-lg">
+                  <h4 className="font-medium text-blue-800 mb-2">Current Transcript:</h4>
+                  <p className="text-blue-700">"{listening ? transcript : answerText}"</p>
                 </div>
               )}
               
+              {/* Final Transcript Display */}
+              {finalTranscript && !listening && (
+                <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-400 rounded-lg">
+                  <h4 className="font-medium text-blue-800 mb-2">Final Speech Transcript:</h4>
+                  <p className="text-blue-700">"{finalTranscript}"</p>
+                </div>
+              )}
+              
+              {/* Controls */}
               <div className="flex space-x-4">
                 {!isAnswering ? (
                   <Button
-                    onClick={startAnswering}
-                    className="flex items-center"
-                    disabled={isSessionComplete || isLoading}
+                    onClick={handleStartAnswering}
+                    disabled={!isMicrophoneAvailable}
                   >
-                    <Play className="w-4 h-4 mr-2" />
+                    <Mic className="w-4 h-4 mr-2" />
                     Start Recording
                   </Button>
                 ) : (
                   <Button
                     variant="danger"
-                    onClick={stopAnswering}
-                    className="flex items-center"
-                    disabled={isSessionComplete || isLoading}
+                    onClick={handleStopAnswering}
                   >
-                    <Square className="w-4 h-4 mr-2" />
+                    <MicOff className="w-4 h-4 mr-2" />
                     Stop Recording
                   </Button>
                 )}
+                
                 <Button
                   variant="outline"
-                  onClick={nextQuestion}
-                  className="flex items-center"
-                  disabled={isLoading || isAnswering || isSessionComplete || completedQuestions.includes(currentQuestionIndex) === false}
+                  onClick={handleNextQuestion}
+                  disabled={
+                    loading || 
+                    isAnswering || 
+                    !answerText.trim()
+                  }
                 >
-                  {isLoading ? 'Loading...' : 'Next Question'}
+                  {loading ? 'Loading...' : 'Next Question'}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
+
+                {/* Finish Button */}
+                <Button
+                  variant="danger"
+                  onClick={async () => {
+                    setIsSessionComplete(true);
+                    // Call result API
+                    try {
+                      const endpoint = interviewMode === 'comp2' ? 'get_user_result_comp2' : 'get_feedback';
+                      const result: any = await callAPI(endpoint, { username });
+                      alert('Test finished! Result: ' + JSON.stringify(result));
+                    } catch (err) {
+                      alert('Test finished! (Could not fetch result)');
+                    }
+                  }}
+                  disabled={isSessionComplete}
+                >
+                  Finish
+                </Button>
               </div>
-              
-              {apiError && (
-                <p className="text-red-500 text-sm mt-3">{apiError}</p>
-              )}
-            </div>
-          )}
-          
-          {!isSessionComplete && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-lg font-semibold mb-4">Tips</h3>
-              <ul className="space-y-2 text-gray-700">
-                <li className="flex items-start">
-                  <span className="bg-blue-100 text-blue-700 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5">1</span>
-                  <span>Speak clearly and at a moderate pace.</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="bg-blue-100 text-blue-700 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5">2</span>
-                  <span>Structure your answer with an introduction, key points, and a conclusion.</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="bg-blue-100 text-blue-700 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5">3</span>
-                  <span>Use specific examples from your experience to support your answers.</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="bg-blue-100 text-blue-700 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5">4</span>
-                  <span>Focus on demonstrating problem-solving and communication skills.</span>
-                </li>
-              </ul>
             </div>
           )}
         </div>
-        
-        {/* Question List */}
-        <div className="md:w-1/4">
-          <div className="bg-white rounded-xl shadow-sm p-6">
+
+        {/* Sidebar */}
+        <div className="w-80">
+          <div className="bg-white rounded-xl shadow-lg p-6">
             <h3 className="text-lg font-semibold mb-4">Question Progress</h3>
             <div className="space-y-2">
-              {questions.map((question, index) => (
-                <button
+              {questions.map((question: string, index: number) => (
+                <div
                   key={index}
-                  className={`w-full text-left py-2 px-3 rounded-md transition-colors ${
+                  className={`p-3 rounded-lg transition-all ${
                     currentQuestionIndex === index
-                      ? 'bg-blue-100 text-blue-700'
+                      ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-500'
                       : completedQuestions.includes(index)
                       ? 'bg-green-50 text-green-700'
                       : 'bg-gray-50 text-gray-700'
                   }`}
-                  onClick={() => {
-                    if (!isAnswering) {
-                      setCurrentQuestionIndex(index);
-                      setTimeRemaining(120);
-                    }
-                  }}
-                  disabled={isAnswering}
                 >
                   <div className="flex items-center">
-                    <div className={`w-6 h-6 rounded-full mr-2 flex items-center justify-center text-xs ${
+                    <div className={`w-6 h-6 rounded-full mr-3 flex items-center justify-center text-xs ${
                       currentQuestionIndex === index
                         ? 'bg-blue-600 text-white'
                         : completedQuestions.includes(index)
                         ? 'bg-green-600 text-white'
-                        : 'bg-gray-200 text-gray-700'
+                        : 'bg-gray-300 text-gray-600'
                     }`}>
                       {completedQuestions.includes(index) ? (
                         <CheckCircle size={12} />
@@ -439,16 +584,70 @@ const InterviewPage: React.FC = () => {
                         index + 1
                       )}
                     </div>
-                    <span className="truncate text-sm">
-                      {question.length > 40 ? `${question.substring(0, 40)}...` : question}
+                    <span className="text-sm truncate">
+                      {question.length > 35 ? `${question.substring(0, 35)}...` : question}
                     </span>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           </div>
+          
+          {/* Recording Tips */}
+          <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
+            <h3 className="text-lg font-semibold mb-4">Recording Tips</h3>
+            <ul className="space-y-3 text-sm text-gray-700">
+              <li className="flex items-start">
+                <span className="bg-blue-100 text-blue-700 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 text-xs">1</span>
+                <span>Ensure quiet environment</span>
+              </li>
+              <li className="flex items-start">
+                <span className="bg-blue-100 text-blue-700 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 text-xs">2</span>
+                <span>Speak clearly and at moderate pace</span>
+              </li>
+              <li className="flex items-start">
+                <span className="bg-blue-100 text-blue-700 rounded-full w-5 h-5 flex items-center justify-center mr-2 mt-0.5 text-xs">3</span>
+                <span>Watch live transcript for accuracy</span>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
+      
+      {/* Error Display */}
+      {error && (
+        <div className="fixed bottom-4 right-4 bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg shadow-lg max-w-md">
+          <div className="flex items-start">
+            <AlertCircle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
+            <span className="text-sm">{error}</span>
+            <button 
+              onClick={() => setError(null)}
+              className="ml-2 text-red-500 hover:text-red-700"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .animation-delay-75 {
+          animation-delay: 75ms;
+        }
+        .animation-delay-100 {
+          animation-delay: 100ms;
+        }
+        .animation-delay-200 {
+          animation-delay: 200ms;
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import axios from "axios";
-const serverUrl = "http://192.168.1.62:7777/api/v1";
+const serverUrl = "http://192.168.1.73:7777/api/v1";
 
 const saveResume = (url: string, body: FormData) => {
     console.log("Making request to:", `${serverUrl}/${url}`);
