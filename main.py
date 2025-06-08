@@ -1,4 +1,8 @@
-from flask import Flask, jsonify, request, send_file
+from fastapi import FastAPI, HTTPException, Response, UploadFile, File, Form, Request
+from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Optional, Dict, Any
 from src.component.comp1.start_test import QuestionFetcher
 from src.component.comp1.next import QuestionManagerComp1
 from src.component.comp1.text_to_db import TextAppender
@@ -7,10 +11,9 @@ from src.component.comp2.start_test import QuestionFetcherComp2
 from src.component.comp2.result import UserResultFetcherComp2
 from src.component.comp2.next import QuestionManagerComp2
 from src.component.comp2.cv_to_db import UserCVHandler
-from dotenv import load_dotenv
-from flask_cors import CORS
 from src.component.comp3.start_test import QuestionFetcherComp3
 from src.component.comp3.next import QuestionManagerComp3
+from dotenv import load_dotenv
 from src.utils import create_database
 from src.database_config.user_cv.user_cv_table import create_user_cv_table
 from src.database_config.question_db.inserting_data_to_mysql import python_table_creation, insert_questions_from_excel
@@ -24,392 +27,279 @@ import tempfile
 
 load_dotenv()
 
-app = Flask(__name__)
-CORS(app)
+app = FastAPI()
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.route("/api/v1/start_test_comp1", methods=["GET"])
-def start_test_comp1():
+@app.on_event("startup")
+async def startup_event():
+    # Initialize EdgeTTSService during startup
+    from voice_models.eddge_tts.eddge_tts import tts_service
+    await tts_service.load_voices()
+
+# Define request models
+class StartTestComp2Request(BaseModel):
+    username: str
+    role: str
+    job_description: Optional[str] = ''
+    experience: float
+    cv: Optional[bool] = True
+
+class NextQuestionComp3Request(BaseModel):
+    username: str
+    response: str
+
+@app.get("/api/v1/start_test_comp1")
+async def start_test_comp1(username: str, topic: str, level: str):
     try:
-        # Extract parameters from the URL query string
-        username = request.args.get("username")
-        topic = request.args.get("topic")
-        level = request.args.get("level")
-
-        # Create an instance of QuestionFetcher with the extracted parameters
         question_id_fetcher_instance = QuestionFetcher(username, topic, level)
         question_id = question_id_fetcher_instance.fetch_questions()
     
         if question_id is not None:
-            return jsonify({'question': str(question_id)})
+            return {'question': str(question_id)}
         else:
-            return jsonify({'message': 'No question assigned to user'}), 404
+            raise HTTPException(status_code=404, detail='No question assigned to user')
 
     except Exception as e:
-        return str(e), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-
-
-@app.route('/api/v1/get_next_question_id_comp1', methods=['GET'])
-def get_next_question_comp1():
-    username = request.args.get('username')
-    # topic = request.args.get('topic')
-    # level = request.args.get('level')
-    text = request.args.get('text')
-
+@app.get('/api/v1/get_next_question_id_comp1')
+async def get_next_question_comp1(username: str, text: Optional[str] = None):
     if not username:
-        return jsonify({'error': 'Username not provided'}), 400
+        raise HTTPException(status_code=400, detail='Username not provided')
 
     question_manager = QuestionManagerComp1()
-    question_manager.text_db(username, text)  # Corrected method call
+    question_manager.text_db(username, text)
     next_question_id = question_manager.get_next_question_id(username)
 
     if next_question_id is not None:
-        return jsonify({'next_question_id': next_question_id}), 200
+        return {'next_question_id': next_question_id}
     else:
-        # Return a message with status code 200 if no more questions remain
-        return jsonify({'message': 'No more questions left for this user'}), 200
+        return {'message': 'No more questions left for this user'}
 
-
-
-
-
-@app.route('/api/v1/get_user_result_comp1', methods=['GET'])
-def get_user_result_api_comp1():
-    fetcher = UserResultFetcherComp1()
-
-    username = request.args.get('username')
-    
+@app.get('/api/v1/get_user_result_comp1')
+async def get_user_result_api_comp1(username: str):
     if not username:
-        return jsonify({"error": "Username parameter is missing"}), 400
+        raise HTTPException(status_code=400, detail="Username parameter is missing")
 
+    fetcher = UserResultFetcherComp1()
     response_result = fetcher.get_user_result(username)
     
     if response_result is None:
-        return jsonify({"error": f"No data found for username: {username}"}), 404
+        raise HTTPException(status_code=404, detail=f"No data found for username: {username}")
 
-    return jsonify({"response_result": response_result}), 200
+    return {"response_result": response_result}
 
-
-
-@app.route('/api/v1/start_test_comp2', methods=['POST'])
-def handle_start_test_comp2():
+@app.post('/api/v1/start_test_comp2')
+async def handle_start_test_comp2(request: StartTestComp2Request):
     try:
-        # Validate input data
-        data = request.json
-        if not data:
-            return jsonify({"error": "No input data provided"}), 400
-
-        # Extract parameters with validation
-        username = data.get('username')
-        role = data.get('role')
-        job_description = data.get('job_description', '')
-        experience = data.get('experience')
-        cv_flag = data.get('cv', True)
-
-        # Validate required parameters
-        if not username:
-            return jsonify({"error": "Username is required"}), 400
+        QuestionFetcherComp2_instance = QuestionFetcherComp2(
+            request.username, request.role, request.job_description, 
+            request.experience, request.cv
+        )
         
-        if not role:
-            return jsonify({"error": "Role is required"}), 400
-        
-        if experience is None:
-            return jsonify({"error": "Experience is required"}), 400
-
-        # Create QuestionFetcherComp2 instance
-        try:
-            QuestionFetcherComp2_instance = QuestionFetcherComp2(
-                username, role, job_description, experience, cv_flag
-            )
-        except ValueError as ve:
-            return jsonify({"error": str(ve)}), 400
-
-        # Generate questions from CV
         try:
             result = QuestionFetcherComp2_instance.generate_question_from_cv()
         except FileNotFoundError as fnf:
-            return jsonify({
-                "error": str(fnf),
-                "status_code": 404,
-                "message": "CV not found for the given username"
-            }), 404
-        except ConnectionError as ce:
-            return jsonify({
-                "error": str(ce),
-                "status_code": 500,
-                "message": "Database connection error"
-            }), 500
+            raise HTTPException(status_code=404, detail=str(fnf))
+        except ConnectionError:
+            raise HTTPException(status_code=500, detail="Database connection error")
         except ValueError as ve:
-            return jsonify({
-                "error": str(ve),
-                "status_code": 500,
-                "message": "Error generating questions"
-            }), 500
-        except Exception as e:
-            return jsonify({
-                "error": "An unexpected error occurred while generating questions",
-                "status_code": 500,
-                "message": str(e)
-            }), 500
+            raise HTTPException(status_code=500, detail=str(ve))
 
-        # Validate result
         if result is None or result.empty:
-            return jsonify({
-                "error": "No questions could be generated",
-                "status_code": 404,
-                "message": "Unable to generate questions from CV"
-            }), 404
+            raise HTTPException(status_code=404, detail="No questions could be generated")
 
-        # Convert questions to list
         questions = result['question'].tolist()
+        first_question = QuestionFetcherComp2_instance.insert_questions_into_db(questions)
 
-        # Insert questions into database
-        try:
-            first_question = QuestionFetcherComp2_instance.insert_questions_into_db(questions)
-        except Exception as e:
-            return jsonify({
-                "error": "Failed to insert questions into database",
-                "status_code": 500,
-                "message": str(e)
-            }), 500
-
-        # Return successful response with audio
         # Generate audio for the first question
         tts_converter = TextToSpeechConverter()
-        audio_bytes = tts_converter.convert_text_to_mp3_bytes(str(first_question))
-        # Write to a temp file
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
-            tmp_file.write(audio_bytes)
-            tmp_file.flush()
-            tmp_file_path = tmp_file.name
-        response = send_file(tmp_file_path, mimetype='audio/mpeg', as_attachment=True, download_name='question.mp3')
-        response.headers['X-Question-Text'] = str(first_question)
-        @response.call_on_close
-        def cleanup():
-            os.remove(tmp_file_path)
-        return response
+        audio_bytes = await tts_converter.convert_text_to_mp3_bytes_async(str(first_question))
+        
+        if audio_bytes is None:
+            raise HTTPException(status_code=500, detail="Failed to generate audio")
 
+        return StreamingResponse(
+            io.BytesIO(audio_bytes),
+            media_type="audio/mpeg",
+            headers={
+                "Content-Disposition": "attachment; filename=question.mp3",
+                "X-Question-Text": str(first_question)
+            }
+        )
+
+    except HTTPException:
+        raise
     except Exception as e:
-        # Catch any unexpected errors
-        app.logger.error(f"Unexpected error in start_test_comp2: {e}")
-        return jsonify({
-            "error": "An unexpected server error occurred",
-            "status_code": 500,
-            "message": str(e)
-        }), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-@app.route('/api/v1/get_next_question_comp2', methods=['GET'])
-def get_next_question_comp2():
-    username = request.args.get('username')
-    text = request.args.get('text')
-
+@app.get('/api/v1/get_next_question_comp2')
+async def get_next_question_comp2(username: str, text: Optional[str] = None):
     if not username:
-        return jsonify({'error': 'Username not provided'}), 400
+        raise HTTPException(status_code=400, detail='Username not provided')
 
     question_manager = QuestionManagerComp2()
-    question_manager.text_db(username, text)  # Corrected method call
+    question_manager.text_db(username, text)
     next_question_id = question_manager.get_next_question_id_comp2(username)
 
     if next_question_id is not None:
-        # Generate audio for the next question
         tts_converter = TextToSpeechConverter()
-        audio_bytes = tts_converter.convert_text_to_mp3_bytes(str(next_question_id))
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
-            tmp_file.write(audio_bytes)
-            tmp_file.flush()
-            tmp_file_path = tmp_file.name
-        response = send_file(tmp_file_path, mimetype='audio/mpeg', as_attachment=True, download_name='question.mp3')
-        response.headers['X-Question-Text'] = str(next_question_id)
-        @response.call_on_close
-        def cleanup():
-            os.remove(tmp_file_path)
-        return response
+        audio_bytes = await tts_converter.convert_text_to_mp3_bytes_async(str(next_question_id))
+        
+        if audio_bytes is None:
+            raise HTTPException(status_code=500, detail="Failed to generate audio")
+
+        return StreamingResponse(
+            io.BytesIO(audio_bytes),
+            media_type="audio/mpeg",
+            headers={
+                "Content-Disposition": "attachment; filename=question.mp3",
+                "X-Question-Text": str(next_question_id)
+            }
+        )
     else:
-        # Return a message with status code 200 if no more questions remain
-        return jsonify({'message': 'No more questions left for this user'}), 200
+        return {'message': 'No more questions left for this user'}
 
-
-@app.route('/api/v1/get_user_result_comp2', methods=['GET'])
-def get_user_result_api_comp2():
-    fetcher = UserResultFetcherComp2()
-
-    username = request.args.get('username')
-    
+@app.get('/api/v1/get_user_result_comp2')
+async def get_user_result_api_comp2(username: str):
     if not username:
-        return jsonify({"error": "Username parameter is missing"}), 400
+        raise HTTPException(status_code=400, detail="Username parameter is missing")
 
+    fetcher = UserResultFetcherComp2()
     response_result = fetcher.get_user_result(username)
     
     if response_result is None:
-        # Success, but nothing to return
-        return jsonify({"message": "User result processed successfully."}), 200
+        return {"message": "User result processed successfully."}
 
-    return jsonify(response_result), 200
+    return response_result
 
+@app.post("/api/v1/upload_cv")
+async def upload_cv(pdf_file: UploadFile = File(...), username: str = Form(...)):
+    if not pdf_file.filename:
+        raise HTTPException(status_code=400, detail="No selected file.")
 
+    response = UserCVHandler.insert_user_cv(username, pdf_file.file)
+    if response["status"] != "success":
+        raise HTTPException(status_code=500, detail=response["message"])
+    return response
 
-@app.route("/api/v1/upload_cv", methods=["POST"])
-def upload_cv():
-    if "pdf_file" not in request.files or "username" not in request.form:
-        return jsonify({"message": "Username and PDF file are required.", "status": "error"}), 400
-
-    username = request.form["username"]
-    pdf_file = request.files["pdf_file"]
-
-    if pdf_file.filename == "":
-        return jsonify({"message": "No selected file.", "status": "error"}), 400
-
-    response = UserCVHandler.insert_user_cv(username, pdf_file)
-    return jsonify(response), (200 if response["status"] == "success" else 500)
-
-
-@app.route("/api/v1/analyze_cv", methods=["POST"])
-def analyze_cv_endpoint():
+@app.post("/api/v1/analyze_cv")
+async def analyze_cv_endpoint(request: Request):
     try:
-        data = request.json
+        data = await request.json()
         if not data or 'cv_text' not in data:
-            return jsonify({
-                "error": "CV text is required",
-                "status": "error"
-            }), 400
+            raise HTTPException(status_code=400, detail="CV text is required")
 
         cv_text = data['cv_text']
         if not cv_text.strip():
-            return jsonify({
-                "error": "CV text cannot be empty",
-                "status": "error"
-            }), 400
+            raise HTTPException(status_code=400, detail="CV text cannot be empty")
 
-        # Import the analyze_cv function
         from src.model.groq import analyze_cv
-        
-        # Get the analysis
         analysis_result = analyze_cv(cv_text)
         
-        # Return the analysis result
-        return jsonify({
+        return {
             "status": "success",
             "analysis": analysis_result
-        }), 200
+        }
 
     except Exception as e:
-        return jsonify({
-            "error": str(e),
-            "status": "error"
-        }), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-@app.route('/api/v1/start_test_comp3', methods=['POST'])
-def handle_start_test_comp3():
+@app.post('/api/v1/start_test_comp3')
+async def handle_start_test_comp3(request: StartTestComp2Request):
     try:
-        # Validate input data
-        data = request.json
-        if not data:
-            return jsonify({"error": "No input data provided"}), 400
-
-        # Extract parameters with validation
-        username = data.get('username')
-        role = data.get('role')
-        job_description = data.get('job_description', '')
-        experience = data.get('experience')
-        cv_flag = data.get('cv', True)
-
-        # Validate required parameters
-        if not username:
-            return jsonify({"error": "Username is required"}), 400
-        
-        if not role:
-            return jsonify({"error": "Role is required"}), 400
-        
-        if experience is None:
-            return jsonify({"error": "Experience is required"}), 400
-
-        # Create QuestionFetcherComp3 instance and start session
+        fetcher = QuestionFetcherComp3(
+            request.username, request.role, request.job_description,
+            request.experience, request.cv
+        )
         try:
-            fetcher = QuestionFetcherComp3(
-                username, role, job_description, experience, cv_flag
-            )
             result = fetcher.start_session()
+            if not result or 'question' not in result:
+                raise HTTPException(status_code=500, detail="Failed to generate initial question")
+                
+            tts_converter = TextToSpeechConverter()
+            audio_bytes = await tts_converter.convert_text_to_mp3_bytes_async(str(result['question']))
+            
+            if audio_bytes is None:
+                raise HTTPException(status_code=500, detail="Failed to generate audio")
+
+            return StreamingResponse(
+                io.BytesIO(audio_bytes),
+                media_type="audio/mpeg",
+                headers={
+                    "Content-Disposition": "attachment; filename=question.mp3",
+                    "X-Question-Text": str(result['question'])
+                }
+            )
+
         except FileNotFoundError as fnf:
-            return jsonify({
-                "error": str(fnf),
-                "status_code": 404,
-                "message": "CV not found for the given username"
-            }), 404
+            raise HTTPException(status_code=404, detail=str(fnf))
         except Exception as e:
-            return jsonify({
-                "error": "Failed to start session",
-                "status_code": 500,
-                "message": str(e)
-            }), 500
+            print(f"Error in start_session: {str(e)}")  # Add logging
+            raise HTTPException(status_code=500, detail=f"Failed to start session: {str(e)}")
 
-        # Return mp3 audio file for the first question
-        tts_converter = TextToSpeechConverter()
-        audio_bytes = tts_converter.convert_text_to_mp3_bytes(str(result['question']))
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
-            tmp_file.write(audio_bytes)
-            tmp_file.flush()
-            tmp_file_path = tmp_file.name
-        response = send_file(tmp_file_path, mimetype='audio/mpeg', as_attachment=True, download_name='question.mp3')
-        response.headers['X-Question-Text'] = str(result['question'])
-        @response.call_on_close
-        def cleanup():
-            os.remove(tmp_file_path)
-        return response
+    except HTTPException:
+        raise
     except Exception as e:
-        return jsonify({
-            "error": "An unexpected error occurred",
-            "status_code": 500,
-            "message": str(e)
-        }), 500
+        print(f"Unexpected error in handle_start_test_comp3: {str(e)}")  # Add logging
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-@app.route('/api/v1/get_next_question_comp3', methods=['POST'])
-def get_next_question_comp3():
+@app.post('/api/v1/get_next_question_comp3')
+async def get_next_question_comp3(request: NextQuestionComp3Request):
     try:
-        data = request.json
-        if not data:
-            return jsonify({"error": "No input data provided"}), 400
-
-        username = data.get('username')
-        response_text = data.get('response')
-
-        if not username:
-            return jsonify({"error": "Username is required"}), 400
-        if not response_text:
-            return jsonify({"error": "Response is required"}), 400
+        if not request.username or not request.response:
+            raise HTTPException(status_code=400, detail="Username and response are required")
 
         question_manager = QuestionManagerComp3()
-        result = question_manager.process_response_and_get_next(username, response_text)
+        try:
+            result = question_manager.process_response_and_get_next(
+                request.username, request.response
+            )
 
-        if result['status'] == 'completed':
-            return jsonify({
-                'status': 'completed',
-                'message': result['message']
-            }), 200
+            if not result:
+                raise HTTPException(status_code=500, detail="Failed to process response and get next question")
 
-        # Return mp3 audio file for the next question
-        tts_converter = TextToSpeechConverter()
-        audio_bytes = tts_converter.convert_text_to_mp3_bytes(str(result['next_question']))
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
-            tmp_file.write(audio_bytes)
-            tmp_file.flush()
-            tmp_file_path = tmp_file.name
-        response = send_file(tmp_file_path, mimetype='audio/mpeg', as_attachment=True, download_name='question.mp3')
-        response.headers['X-Question-Text'] = str(result['next_question'])
-        @response.call_on_close
-        def cleanup():
-            os.remove(tmp_file_path)
-        return response
+            if result.get('status') == 'completed':
+                return {
+                    'status': 'completed',
+                    'message': result.get('message', 'Interview completed')
+                }
+
+            if 'next_question' not in result:
+                raise HTTPException(status_code=500, detail="No next question available")
+
+            tts_converter = TextToSpeechConverter()
+            audio_bytes = await tts_converter.convert_text_to_mp3_bytes_async(str(result['next_question']))
+            
+            if audio_bytes is None:
+                raise HTTPException(status_code=500, detail="Failed to generate audio")
+
+            return StreamingResponse(
+                io.BytesIO(audio_bytes),
+                media_type="audio/mpeg",
+                headers={
+                    "Content-Disposition": "attachment; filename=question.mp3",
+                    "X-Question-Text": str(result['next_question'])
+                }
+            )
+
+        except Exception as e:
+            print(f"Error in process_response_and_get_next: {str(e)}")  # Add logging
+            raise HTTPException(status_code=500, detail=str(e))
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return jsonify({
-            "error": "An unexpected error occurred",
-            "status_code": 500,
-            "message": str(e)
-        }), 500
+        print(f"Unexpected error in get_next_question_comp3: {str(e)}")  # Add logging
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     # creating database if not exist
@@ -424,11 +314,8 @@ if __name__ == "__main__":
     python_table_creation(question_table_name)
     insert_questions_from_excel(question_file_path, question_table_name)
 
-
-
     #creatuing CV schema
     create_user_cv_table()
-
 
     #creating user_history table
     create_user_history_table()
@@ -438,6 +325,7 @@ if __name__ == "__main__":
     create_user_test_info_table_2()
     create_user_test_info_table_3()
 
-    #running the app
-    app.run(host = '0.0.0.0', port = 7777, debug=False)
+    #running the app with uvicorn
+    import uvicorn
+    uvicorn.run(app, host='0.0.0.0', port=7777)
 

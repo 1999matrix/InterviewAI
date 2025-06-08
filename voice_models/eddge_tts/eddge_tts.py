@@ -1,4 +1,3 @@
-from flask_cors import CORS
 import asyncio
 import base64
 import io
@@ -21,28 +20,30 @@ class EdgeTTSService:
         self.default_voice = "en-IN-PrabhatNeural"  # High quality male voice
         self.voices = []
         if EDGE_TTS_AVAILABLE:
-            asyncio.run(self.load_voices())
+            # Initialize voices list but don't load them in constructor
+            self.voices = []
     
     async def load_voices(self):
         """Load available voices"""
-        try:
-            voices = await edge_tts.list_voices()
-            self.voices = [
-                {
-                    'name': voice['Name'],
-                    'short_name': voice['ShortName'],
-                    'gender': voice['Gender'],
-                    'locale': voice['Locale'],
-                    'suggested_codec': voice['SuggestedCodec'],
-                    'friendly_name': voice['FriendlyName']
-                }
-                for voice in voices
-                if voice['Locale'].startswith('en-')  # English voices only
-            ]
-            print(f"Loaded {len(self.voices)} English voices")
-        except Exception as e:
-            print(f"Error loading voices: {e}")
-            self.voices = []
+        if not self.voices:  # Only load if not already loaded
+            try:
+                voices = await edge_tts.list_voices()
+                self.voices = [
+                    {
+                        'name': voice['Name'],
+                        'short_name': voice['ShortName'],
+                        'gender': voice['Gender'],
+                        'locale': voice['Locale'],
+                        'suggested_codec': voice['SuggestedCodec'],
+                        'friendly_name': voice['FriendlyName']
+                    }
+                    for voice in voices
+                    if voice['Locale'].startswith('en-')  # English voices only
+                ]
+                print(f"Loaded {len(self.voices)} English voices")
+            except Exception as e:
+                print(f"Error loading voices: {e}")
+                self.voices = []
     
     async def text_to_speech_async(self, text, voice=None):
         """Convert text to speech asynchronously"""
@@ -70,27 +71,65 @@ tts_service = EdgeTTSService()
 tts_service_global = tts_service
 
 class TextToSpeechConverter:
-    """
-    Simple class to convert text to mp3 file using EdgeTTSService.
-    Usage:
-        converter = TextToSpeechConverter()
-        mp3_path = converter.convert_text_to_mp3("Hello world!", voice="en-IN-PrabhatNeural")
-    """
-    def __init__(self, tts_service=None):
-        self.tts_service = tts_service or tts_service_global
+    def __init__(self):
+        self.voice = "en-IN-PrabhatNeural"  # Default voice
+        self.output_format = "mp3"
 
-    def convert_text_to_mp3_bytes(self, text, voice=None):
-        """
-        Convert text to mp3 audio and return as bytes (does not save to disk)
-        """
-        if not EDGE_TTS_AVAILABLE:
-            raise Exception("edge-tts not available. Install with: pip install edge-tts")
-        if not text or len(text) > 2000:
-            raise ValueError("Text must be non-empty and at most 2000 characters.")
-        audio_data = self.tts_service.text_to_speech(text, voice)
-        if not audio_data:
-            raise Exception("Failed to generate audio.")
-        return audio_data
+    async def convert_text_to_mp3_bytes_async(self, text):
+        """Convert text to MP3 audio bytes asynchronously"""
+        if not text:
+            return None
+
+        # Create a temporary file to store the audio
+        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
+            temp_path = temp_file.name
+
+        try:
+            # Run the text-to-speech conversion
+            communicate = edge_tts.Communicate(text, self.voice)
+            await communicate.save(temp_path)
+
+            # Read the audio file into bytes
+            with open(temp_path, 'rb') as audio_file:
+                audio_bytes = audio_file.read()
+
+            return audio_bytes
+
+        except Exception as e:
+            print(f"Error converting text to speech: {e}")
+            return None
+        finally:
+            # Clean up the temporary file
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
+    def convert_text_to_mp3_bytes(self, text):
+        """Synchronous wrapper for convert_text_to_mp3_bytes_async"""
+        if not text:
+            return None
+
+        # Create a temporary file to store the audio
+        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
+            temp_path = temp_file.name
+
+        try:
+            # Create a new event loop for the async operation
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            # Run the async conversion in the new loop
+            audio_bytes = loop.run_until_complete(self.convert_text_to_mp3_bytes_async(text))
+            loop.close()
+            
+            return audio_bytes
+
+        except Exception as e:
+            print(f"Error converting text to speech: {e}")
+            return None
+        finally:
+            # Clean up the temporary file
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
 
 # Example usage (uncomment to use as a script):
 # if __name__ == "__main__":

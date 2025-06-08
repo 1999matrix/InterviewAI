@@ -1,4 +1,3 @@
-from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from src.utils import connect_to_db
 import os

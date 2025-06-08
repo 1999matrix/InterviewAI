@@ -1,11 +1,8 @@
-from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from src.utils import connect_to_db 
 import os
 
 load_dotenv()
-
-app = Flask(__name__)
 
 class TextAppender:
     def __init__(self):
