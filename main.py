@@ -1,8 +1,10 @@
-from fastapi import FastAPI, HTTPException, Response, UploadFile, File, Form, Request
+from fastapi import FastAPI, HTTPException, Response, UploadFile, File, Form, Request, BackgroundTasks, Depends
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from src.component.comp1.start_test import QuestionFetcher
 from src.component.comp1.next import QuestionManagerComp1
 from src.component.comp1.text_to_db import TextAppender
@@ -24,12 +26,81 @@ from voice_models.eddge_tts.eddge_tts import TextToSpeechConverter
 import io
 import base64
 import tempfile
+import asyncio
+from datetime import datetime, timedelta
+import time
+import logging
+from contextlib import asynccontextmanager
+import mysql.connector.pooling
 
 load_dotenv()
 
-app = FastAPI()
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-# Add CORS middleware
+# Rate limiting settings
+RATE_LIMIT_DURATION = 60  # seconds
+MAX_REQUESTS_PER_MINUTE = 100
+request_history: Dict[str, List[float]] = {}
+
+# Database connection pool configuration
+db_config = {
+    'pool_name': 'mypool',
+    'pool_size': 5,
+    'host': os.getenv('mysql_database_host'),
+    'user': os.getenv('mysql_database_user'),
+    'password': os.getenv('mysql_database_password'),
+    'database': os.getenv('database_uq')
+}
+
+# Create connection pool
+connection_pool = mysql.connector.pooling.MySQLConnectionPool(**db_config)
+
+# Startup and shutdown events
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("Starting up application...")
+    
+    # Create database
+    database_name = os.getenv("database_uq")
+    if not database_name:
+        logger.error("database_uq environment variable is not set")
+        raise RuntimeError("database_uq environment variable is not set")
+    create_database(database_name)
+    
+    try:
+        # Create all necessary tables
+        logger.info("Creating database tables...")
+        create_user_cv_table()
+        create_user_history_table()
+        create_user_test_info_table_1()
+        create_user_test_info_table_2()
+        create_user_test_info_table_3()
+        logger.info("Database tables created successfully")
+        
+        # Initialize EdgeTTSService
+        logger.info("Initializing EdgeTTSService...")
+        from voice_models.eddge_tts.eddge_tts import tts_service
+        await tts_service.load_voices()
+        logger.info("EdgeTTSService initialized successfully")
+        
+    except Exception as e:
+        logger.error(f"Error during startup: {e}")
+        raise
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down application...")
+
+app = FastAPI(lifespan=lifespan)
+
+# Add middlewares
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -37,12 +108,62 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 
+# Rate limiting dependency
+async def check_rate_limit(request: Request):
+    client_ip = request.client.host
+    current_time = time.time()
+    
+    if client_ip not in request_history:
+        request_history[client_ip] = []
+    
+    # Remove old requests
+    request_history[client_ip] = [
+        req_time for req_time in request_history[client_ip]
+        if current_time - req_time < RATE_LIMIT_DURATION
+    ]
+    
+    if len(request_history[client_ip]) >= MAX_REQUESTS_PER_MINUTE:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests. Please try again later."
+        )
+    
+    request_history[client_ip].append(current_time)
+
+# Background task for cleanup
+async def cleanup_old_sessions():
+    while True:
+        try:
+            connection = connection_pool.get_connection()
+            cursor = connection.cursor()
+            
+            # Delete sessions older than 24 hours
+            cutoff_time = datetime.now() - timedelta(hours=24)
+            tables = ['user_session_table_1', 'user_session_table_2', 'user_session_table_3']
+            
+            for table in tables:
+                query = f"DELETE FROM {table} WHERE created_at < %s"
+                cursor.execute(query, (cutoff_time,))
+            
+            connection.commit()
+            
+        except Exception as e:
+            logger.error(f"Error in cleanup task: {e}")
+        finally:
+            if 'cursor' in locals():
+                cursor.close()
+            if 'connection' in locals():
+                connection.close()
+        
+        await asyncio.sleep(3600)  # Run every hour
+
+# Start background tasks
 @app.on_event("startup")
-async def startup_event():
-    # Initialize EdgeTTSService during startup
-    from voice_models.eddge_tts.eddge_tts import tts_service
-    await tts_service.load_voices()
+async def start_background_tasks():
+    asyncio.create_task(cleanup_old_sessions())
 
 # Define request models
 class StartTestComp2Request(BaseModel):
@@ -214,22 +335,34 @@ async def analyze_cv_endpoint(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post('/api/v1/start_test_comp3')
-async def handle_start_test_comp3(request: StartTestComp2Request):
+async def handle_start_test_comp3(
+    request: StartTestComp2Request,
+    background_tasks: BackgroundTasks,
+    _: None = Depends(check_rate_limit)
+):
     try:
         fetcher = QuestionFetcherComp3(
             request.username, request.role, request.job_description,
             request.experience, request.cv
         )
+        
         try:
             result = fetcher.start_session()
             if not result or 'question' not in result:
                 raise HTTPException(status_code=500, detail="Failed to generate initial question")
-                
+            
+            # Convert text to speech in background
             tts_converter = TextToSpeechConverter()
             audio_bytes = await tts_converter.convert_text_to_mp3_bytes_async(str(result['question']))
             
             if audio_bytes is None:
                 raise HTTPException(status_code=500, detail="Failed to generate audio")
+
+            # Log successful request
+            background_tasks.add_task(
+                logger.info,
+                f"Successfully started test for user: {request.username}"
+            )
 
             return StreamingResponse(
                 io.BytesIO(audio_bytes),
@@ -241,19 +374,24 @@ async def handle_start_test_comp3(request: StartTestComp2Request):
             )
 
         except FileNotFoundError as fnf:
+            logger.error(f"File not found: {fnf}")
             raise HTTPException(status_code=404, detail=str(fnf))
         except Exception as e:
-            print(f"Error in start_session: {str(e)}")  # Add logging
+            logger.error(f"Error in start_session: {e}")
             raise HTTPException(status_code=500, detail=f"Failed to start session: {str(e)}")
 
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Unexpected error in handle_start_test_comp3: {str(e)}")  # Add logging
+        logger.error(f"Unexpected error in handle_start_test_comp3: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post('/api/v1/get_next_question_comp3')
-async def get_next_question_comp3(request: NextQuestionComp3Request):
+async def get_next_question_comp3(
+    request: NextQuestionComp3Request,
+    background_tasks: BackgroundTasks,
+    _: None = Depends(check_rate_limit)
+):
     try:
         if not request.username or not request.response:
             raise HTTPException(status_code=400, detail="Username and response are required")
@@ -268,6 +406,11 @@ async def get_next_question_comp3(request: NextQuestionComp3Request):
                 raise HTTPException(status_code=500, detail="Failed to process response and get next question")
 
             if result.get('status') == 'completed':
+                # Log completion in background
+                background_tasks.add_task(
+                    logger.info,
+                    f"Test completed for user: {request.username}"
+                )
                 return {
                     'status': 'completed',
                     'message': result.get('message', 'Interview completed')
@@ -282,6 +425,12 @@ async def get_next_question_comp3(request: NextQuestionComp3Request):
             if audio_bytes is None:
                 raise HTTPException(status_code=500, detail="Failed to generate audio")
 
+            # Log successful response processing
+            background_tasks.add_task(
+                logger.info,
+                f"Successfully processed response for user: {request.username}"
+            )
+
             return StreamingResponse(
                 io.BytesIO(audio_bytes),
                 media_type="audio/mpeg",
@@ -292,14 +441,19 @@ async def get_next_question_comp3(request: NextQuestionComp3Request):
             )
 
         except Exception as e:
-            print(f"Error in process_response_and_get_next: {str(e)}")  # Add logging
+            logger.error(f"Error in process_response_and_get_next: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Unexpected error in get_next_question_comp3: {str(e)}")  # Add logging
+        logger.error(f"Unexpected error in get_next_question_comp3: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 if __name__ == "__main__":
     # creating database if not exist
