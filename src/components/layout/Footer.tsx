@@ -6,7 +6,7 @@ import Logo from '../ui/Logo';
 const Footer: React.FC = () => {
   return (
     <footer className="bg-gray-900 text-white mt-auto">
-      <div className="container mx-auto px-4 md:px-6 py-8 md:py-12">
+      <div className="container mx-auto px-4 md:px-6 py-4 md:py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1">
             <div className="flex items-center space-x-2 mb-4">
@@ -93,8 +93,8 @@ const Footer: React.FC = () => {
           </div>
         </div>
         
-        <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-          <p className="text-gray-500">
+        <div className="border-t border-gray-800 mt-2 p-2 text-center">
+          <p className="text-gray-400">
             © {new Date().getFullYear()} InterviewAI. All rights reserved.
           </p>
         </div>
