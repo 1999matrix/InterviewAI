@@ -13,7 +13,7 @@ import {
   XCircle
 } from 'lucide-react';
 import Button from '../../components/ui/Button';
-import { saveResume, getQuestion } from '../../services/Sharedservice';
+import { saveResume, getQuestion, startTestComp2, startTestComp3, handleServerAudioResponse } from '../../services/Sharedservice';
 import { useContext } from 'react';
 import { AuthContext } from '../../contexts/AuthContext';
 
@@ -172,8 +172,7 @@ const CreateSessionPage: React.FC = () => {
       
       let questionResult;
       if (formData.interviewMode === 'comp2') {
-        questionResult = await getQuestion(
-          'start_test_comp2',
+        questionResult = await startTestComp2(
           user?.name || user?.email || 'guest',
           formData.jobRole,
           formData.jobDescription,
@@ -181,8 +180,7 @@ const CreateSessionPage: React.FC = () => {
           formData.uploadResume && !!formData.file
         );
       } else if (formData.interviewMode === 'comp3') {
-        questionResult = await getQuestion(
-          'start_test_comp3',
+        questionResult = await startTestComp3(
           user?.name || user?.email || 'guest',
           formData.jobRole,
           formData.jobDescription,
@@ -192,12 +190,20 @@ const CreateSessionPage: React.FC = () => {
       }
       
       if (questionResult && questionResult.status === 200) {
+        // Handle the audio response from the server
+        const { questionText, audioUrl } = await handleServerAudioResponse(questionResult);
+        
         navigate('/interview/session', {
           state: {
-            question: questionResult.data.questions || questionResult.data.question,
+            question: questionText,
+            audioUrl: audioUrl,
             interviewType: formData.interviewType,
             user: user?.name || user?.email || 'guest',
             interviewMode: formData.interviewMode,
+            role: formData.jobRole,
+            jobDescription: formData.jobDescription,
+            experience: experienceNumber,
+            uploadResume: formData.uploadResume && !!formData.file
           }
         });
       }
@@ -303,7 +309,7 @@ const CreateSessionPage: React.FC = () => {
           <div className="space-y-6">
             <h2 className="text-xl font-semibold mb-4">Select Interview Mode</h2>
             <p className="text-gray-600 mb-8">Choose your interview experience.</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <button
                 type="button"
                 className={`flex flex-col items-center justify-center border rounded-lg p-6 transition-all ${
@@ -313,6 +319,9 @@ const CreateSessionPage: React.FC = () => {
                 }`}
                 onClick={() => setFormData({ ...formData, interviewMode: 'comp2' })}
               >
+                <div className="mb-2">
+                  <Briefcase size={32} className="text-blue-600" />
+                </div>
                 <h3 className="text-lg font-medium">No Cross-Questioning</h3>
                 <p className="text-gray-500 text-sm mt-2 text-center">
                   Standard interview (Comp2): No follow-up questions.
@@ -327,16 +336,61 @@ const CreateSessionPage: React.FC = () => {
                 }`}
                 onClick={() => setFormData({ ...formData, interviewMode: 'comp3' })}
               >
+                <div className="mb-2">
+                  <Brain size={32} className="text-blue-600" />
+                </div>
                 <h3 className="text-lg font-medium">With Cross-Questioning</h3>
                 <p className="text-gray-500 text-sm mt-2 text-center">
                   Dynamic interview (Comp3): Get follow-up questions based on your answers.
+                </p>
+              </button>
+              <button
+                type="button"
+                className={`flex flex-col items-center justify-center border rounded-lg p-6 transition-all ${
+                  formData.interviewMode === 'coding-test'
+                    ? 'border-blue-600 ring-2 ring-blue-200 bg-blue-50'
+                    : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                }`}
+                onClick={() => setFormData({ ...formData, interviewMode: 'coding-test' })}
+              >
+                <div className="mb-2">
+                  <Code size={32} className="text-blue-600" />
+                </div>
+                <h3 className="text-lg font-medium">Coding Test</h3>
+                <p className="text-gray-500 text-sm mt-2 text-center">
+                  Practice a timed coding assessment with real problems.
+                </p>
+              </button>
+              <button
+                type="button"
+                className={`flex flex-col items-center justify-center border rounded-lg p-6 transition-all ${
+                  formData.interviewMode === 'aptitude-test'
+                    ? 'border-blue-600 ring-2 ring-blue-200 bg-blue-50'
+                    : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                }`}
+                onClick={() => setFormData({ ...formData, interviewMode: 'aptitude-test' })}
+              >
+                <div className="mb-2">
+                  <Clock size={32} className="text-blue-600" />
+                </div>
+                <h3 className="text-lg font-medium">Aptitude Test</h3>
+                <p className="text-gray-500 text-sm mt-2 text-center">
+                  Professional aptitude exam with timer, question palette, and security features.
                 </p>
               </button>
             </div>
             <div className="flex justify-end mt-10">
               <Button
                 type="button"
-                onClick={() => formData.interviewMode && setCurrentStep(2)}
+                onClick={() => {
+                  if (formData.interviewMode === 'coding-test') {
+                    navigate('/interview/coding-test');
+                  } else if (formData.interviewMode === 'aptitude-test') {
+                    navigate('/interview/aptitude-test');
+                  } else if (formData.interviewMode) {
+                    setCurrentStep(2);
+                  }
+                }}
                 disabled={!formData.interviewMode}
                 className="flex items-center"
               >

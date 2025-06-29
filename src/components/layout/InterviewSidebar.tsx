@@ -8,7 +8,8 @@ import {
   Users,
   MessageSquare,
   Mail,
-  LogOut
+  LogOut,
+  Code
 } from 'lucide-react';
 
 interface InterviewSidebarProps {
@@ -22,6 +23,7 @@ const InterviewSidebar: React.FC<InterviewSidebarProps> = ({ isOpen, toggleSideb
   const sidebarLinks = [
     { icon: <UserCircle size={20} />, label: 'Profile', path: '/interview/profile' },
     { icon: <Calendar size={20} />, label: 'Schedule Mock Interview', path: '/interview/schedule' },
+    { icon: <Code size={20} />, label: 'Coding Test', path: '/interview/coding-test' },
     { icon: <BookOpen size={20} />, label: 'Blogs', path: '/interview/blogs' },
     { icon: <FileText size={20} />, label: 'Resume Analyzer', path: '/resume' },
     { icon: <Users size={20} />, label: 'Become Affiliate', path: '/interview/affiliate' },

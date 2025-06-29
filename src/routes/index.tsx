@@ -1,7 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useContext } from 'react';
-import { AuthContext } from '../contexts/AuthContext';
+import ProtectedRoute from '../components/auth/ProtectedRoute';
 
 // Layouts
 import MainLayout from '../components/layout/MainLayout';
@@ -14,6 +13,7 @@ import DemoPage from '../pages/DemoPage';
 import PricingPage from '../pages/PricingPage';
 import LoginPage from '../pages/auth/LoginPage';
 import SignupPage from '../pages/auth/SignupPage';
+import UnauthorizedPage from '../pages/auth/UnauthorizedPage';
 
 // Private Pages
 import DashboardPage from '../pages/dashboard/DashboardPage';
@@ -21,17 +21,9 @@ import CreateSessionPage from '../pages/interview/CreateSessionPage';
 import InterviewPage from '../pages/interview/InterviewPage';
 import ProfilePage from '../pages/interview/ProfilePage';
 import ResumeAnalyzerPage from '../pages/resume/ResumeAnalyzerPage';
-
-// Protected Route Component
-const ProtectedRoute: React.FC<{ element: React.ReactNode }> = ({ element }) => {
-  const { isAuthenticated, isLoading } = useContext(AuthContext);
-  
-  if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  }
-  
-  return isAuthenticated ? <>{element}</> : <Navigate to="/login" />;
-};
+import CodingTestPage from '../pages/interview/CodingTestPage';
+import AptitudeTestPage from '../pages/interview/AptitudeTestPage';
+import KeycloakTestPage from '../pages/KeycloakTestPage';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -43,26 +35,105 @@ const AppRoutes: React.FC = () => {
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/create-session" element={<CreateSessionPage />} />
-        <Route path="/interview/profile" element={<ProfilePage />} />
-        <Route path="/interview/session" element={<InterviewPage />} />
-        <Route path="/interview/schedule" element={<div>Schedule Mock Interview</div>} />
-        <Route path="/interview/blogs" element={<div>Blogs</div>} />
-        <Route path="/interview/affiliate" element={<div>Become Affiliate</div>} />
-        <Route path="/interview/feedback" element={<div>Feedback</div>} />
-        <Route path="/interview/contact" element={<div>Write to Us</div>} />
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
+        <Route path="/keycloak-test" element={<KeycloakTestPage />} />
       </Route>
       
-      {/* Interview Routes with Sidebar */}
-      <Route element={<ProtectedRoute element={<InterviewLayout />} />}>
+      {/* Protected Routes - Basic Authentication Required */}
+      <Route element={<MainLayout />}>
+        <Route path="/dashboard" element={
+          // <ProtectedRoute>
+            <DashboardPage />
+          // </ProtectedRoute>
+        } />
+        <Route path="/create-session" element={
+          // <ProtectedRoute>
+            <CreateSessionPage />
+          // </ProtectedRoute>
+        } />
+        <Route path="/interview/create" element={
+          // <ProtectedRoute>
+            <CreateSessionPage />
+          // </ProtectedRoute>
+        } />
+        <Route path="/interview/profile" element={
+          // <ProtectedRoute>
+            <ProfilePage />
+          // </ProtectedRoute>
+        } />
+        <Route path="/interview/session" element={
+          // <ProtectedRoute>
+            <InterviewPage />
+          // </ProtectedRoute>
+        } />
+        <Route path="/interview/coding-test" element={
+          // <ProtectedRoute>
+            <CodingTestPage />
+          // </ProtectedRoute>
+        } />
+        <Route path="/interview/aptitude-test" element={
+          // <ProtectedRoute>
+            <AptitudeTestPage />
+          // </ProtectedRoute>
+        } />
+        <Route path="/interview/schedule" element={
+          <ProtectedRoute>
+            <div>Schedule Mock Interview</div>
+          </ProtectedRoute>
+        } />
+        <Route path="/interview/blogs" element={
+          <ProtectedRoute>
+            <div>Blogs</div>
+          </ProtectedRoute>
+        } />
+        <Route path="/interview/affiliate" element={
+          <ProtectedRoute>
+            <div>Become Affiliate</div>
+          </ProtectedRoute>
+        } />
+        <Route path="/interview/feedback" element={
+          <ProtectedRoute>
+            <div>Feedback</div>
+          </ProtectedRoute>
+        } />
+        <Route path="/interview/contact" element={
+          <ProtectedRoute>
+            <div>Write to Us</div>
+          </ProtectedRoute>
+        } />
+      </Route>
+      
+      {/* Interview Routes with Sidebar - Role-based Protection */}
+      <Route element={
+        <ProtectedRoute roles={['user', 'premium-user']}>
+          <InterviewLayout />
+        </ProtectedRoute>
+      }>
         <Route path="/resume" element={<ResumeAnalyzerPage />} />
-        <Route path="/logout" element={<Navigate to="/login" />} />
       </Route>
       
-      {/* Protected Dashboard Routes */}
-      <Route element={<ProtectedRoute element={<DashboardLayout />} />}>
+      {/* Admin Routes - Admin Role Required */}
+      <Route element={
+        <ProtectedRoute roles={['admin']} fallbackPath="/unauthorized">
+          <DashboardLayout />
+        </ProtectedRoute>
+      }>
+        {/* Add admin-specific routes here */}
+        <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
+        <Route path="/admin/users" element={<div>User Management</div>} />
       </Route>
+      
+      {/* Premium Routes - Premium Role Required */}
+      <Route element={<MainLayout />}>
+        <Route path="/premium/features" element={
+          <ProtectedRoute roles={['premium-user']} fallbackPath="/pricing">
+            <div>Premium Features</div>
+          </ProtectedRoute>
+        } />
+      </Route>
+      
+      {/* Logout Route */}
+      <Route path="/logout" element={<Navigate to="/login" />} />
       
       {/* Fallback route */}
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -26,7 +26,7 @@ const LandingPage: React.FC = () => {
               </p>
               <div className="pt-4 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                 <Link to="/signup">
-                  <Button className="text-lg px-8 py-3 bg-white text-blue-600 hover:bg-blue-50">
+                  <Button className="text-lg px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:bg-gradient-to-l hover:from-blue-600 hover:to-purple-600">
                     Get Started Free
                   </Button>
                 </Link>
@@ -156,7 +156,7 @@ const LandingPage: React.FC = () => {
             Join thousands of job seekers who are landing their dream jobs with the help of InterviewAI.
           </p>
           <Link to="/signup">
-            <Button className="text-lg px-8 py-3 bg-white text-blue-600 hover:bg-blue-50">
+            <Button className="text-lg px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:bg-gradient-to-l hover:from-blue-600 hover:to-purple-600">
               Get Started Free
             </Button>
           </Link>
