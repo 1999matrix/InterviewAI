@@ -8,7 +8,11 @@ export default defineConfig({
     exclude: ['lucide-react'],
   },
   server: {
-    host: true, // or '0.0.0.0'
+    host: true, // Use localhost for secure context
     port: 5173,
+  },
+  define: {
+    // Ensure secure context
+    global: 'globalThis',
   },
 });

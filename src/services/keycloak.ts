@@ -15,11 +15,19 @@ const initOptions = {
   onLoad: 'check-sso' as const, // Options: 'check-sso', 'login-required'
   silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
   checkLoginIframe: false, // Disable iframe check for better performance
-  pkceMethod: 'S256' as const, // Use PKCE for better security
+  // Disable PKCE for development if Web Crypto API is not available
+  pkceMethod: window.isSecureContext ? 'S256' as const : undefined,
+  enableLogging: true, // Enable logging for debugging
+  checkLoginIframeInterval: 5, // Check interval in seconds
+  flow: 'standard' as const, // Use standard flow instead of implicit
+  // Additional timeout settings
+  messageReceiveTimeout: 10000,
+  responseMode: 'fragment' as const,
 };
 
 class KeycloakService {
   private _keycloak: Keycloak;
+  private _initialized: boolean = false;
 
   constructor() {
     this._keycloak = keycloak;
@@ -31,15 +39,48 @@ class KeycloakService {
 
   // Initialize Keycloak
   async init(): Promise<boolean> {
+    // Prevent double initialization
+    if (this._initialized) {
+      console.warn('Keycloak already initialized');
+      return this.isAuthenticated();
+    }
+
     try {
-      const authenticated = await this._keycloak.init(initOptions);
+      // Check if Keycloak server is reachable
+      const keycloakUrl = keycloakConfig.url;
+      const isDevelopment = import.meta.env.DEV;
       
-      // Set up token refresh
-      this.setupTokenRefresh();
+      if (isDevelopment) {
+        console.log('Keycloak Development Mode - URL:', keycloakUrl);
+        console.log('Keycloak Config:', keycloakConfig);
+      }
+
+      const authenticated = await this._keycloak.init(initOptions);
+      this._initialized = true;
+      
+      // Set up token refresh only if authenticated
+      if (authenticated) {
+        this.setupTokenRefresh();
+      }
       
       return authenticated;
     } catch (error) {
       console.error('Keycloak initialization failed:', error);
+      this._initialized = false;
+      
+      // In development, provide helpful error messages
+      if (import.meta.env.DEV) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorObj = error as any;
+        
+        if (errorMessage?.includes('Web Crypto API')) {
+          console.warn('🔒 Web Crypto API not available. Consider running on HTTPS or localhost.');
+        }
+        if (errorMessage?.includes('timeout') || errorObj?.error === 'Timeout when waiting for 3rd party check iframe message.') {
+          console.warn('🌐 Keycloak server might not be running. Check your VITE_KEYCLOAK_URL configuration.');
+        }
+      }
+      
       throw error;
     }
   }

@@ -80,29 +80,62 @@ const useAudioRecorder = (): AudioRecorderHook => {
     try {
       setError(null);
       
-      // Request high-quality audio stream
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 44100,
-          channelCount: 1,
+      // Request high-quality audio stream with proper browser support detection
+      let stream: MediaStream;
+      
+      const audioConstraints = {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        sampleRate: 44100,
+        channelCount: 1,
+      };
+      
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        // Modern browsers
+        stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+      } else {
+        // Legacy browser support
+        const legacyGetUserMedia = (navigator as any).webkitGetUserMedia 
+                                 || (navigator as any).mozGetUserMedia 
+                                 || (navigator as any).getUserMedia;
+        
+        if (!legacyGetUserMedia) {
+          throw new Error('Your browser does not support audio recording. Please use a modern browser like Chrome, Firefox, or Safari.');
         }
-      });
+        
+        // Wrap legacy getUserMedia in a Promise
+        stream = await new Promise<MediaStream>((resolve, reject) => {
+          legacyGetUserMedia.call(navigator, 
+            { audio: audioConstraints }, 
+            resolve, 
+            reject
+          );
+        });
+      }
 
       streamRef.current = stream;
       chunksRef.current = [];
 
-      // Use high-quality audio format
-      const options: MediaRecorderOptions = {
-        mimeType: 'audio/webm;codecs=opus',
-        audioBitsPerSecond: 128000,
-      };
-
-      // Fallback for Safari
-      if (!MediaRecorder.isTypeSupported(options.mimeType!)) {
-        options.mimeType = 'audio/mp4';
+      // Check MediaRecorder support and choose best format
+      if (!window.MediaRecorder) {
+        throw new Error('Your browser does not support audio recording. Please use a modern browser.');
+      }
+      
+      let options: MediaRecorderOptions = {};
+      
+      // Try different formats in order of preference
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        options = { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 128000 };
+      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+        options = { mimeType: 'audio/webm', audioBitsPerSecond: 128000 };
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        options = { mimeType: 'audio/mp4', audioBitsPerSecond: 128000 };
+      } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+        options = { mimeType: 'audio/ogg', audioBitsPerSecond: 128000 };
+      } else {
+        // Fallback without specifying format
+        options = { audioBitsPerSecond: 128000 };
       }
 
       const mediaRecorder = new MediaRecorder(stream, options);
@@ -115,7 +148,7 @@ const useAudioRecorder = (): AudioRecorderHook => {
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(chunksRef.current, { type: options.mimeType || 'audio/webm' });
         setAudioBlob(audioBlob);
         
         // Cleanup
@@ -140,7 +173,7 @@ const useAudioRecorder = (): AudioRecorderHook => {
       }, 1000);
 
     } catch (err: any) {
-      setError(err.message || 'Failed to access microphone');
+      setError(err.message || 'Failed to access microphone. Please check your browser permissions.');
       console.error('Recording error:', err);
     }
   }, []);

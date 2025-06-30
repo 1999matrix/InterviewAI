@@ -232,6 +232,7 @@ const handleServerAudioResponse = async (response: any): Promise<{ questionText:
                      '';
         
         console.log('Extracted question text:', questionText);
+        console.log('headers>>>:', headers);
         
         // Check if response contains audio (blob)
         if (response.data instanceof Blob && response.data.size > 0) {

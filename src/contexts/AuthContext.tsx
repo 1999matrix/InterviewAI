@@ -42,10 +42,15 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [initializationAttempted, setInitializationAttempted] = useState(false);
   
   useEffect(() => {
-    initializeKeycloak();
-  }, []);
+    // Prevent multiple initialization attempts
+    if (!initializationAttempted) {
+      setInitializationAttempted(true);
+      initializeKeycloak();
+    }
+  }, [initializationAttempted]);
   
   const initializeKeycloak = async () => {
     try {
@@ -58,6 +63,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       }
     } catch (error) {
       console.error('Keycloak initialization error:', error);
+      setInitializationAttempted(false); // Allow retry on error
     } finally {
       setIsLoading(false);
     }

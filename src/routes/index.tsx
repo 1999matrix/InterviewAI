@@ -101,6 +101,7 @@ const AppRoutes: React.FC = () => {
             <div>Write to Us</div>
           </ProtectedRoute>
         } />
+      <Route path="/resume" element={<ResumeAnalyzerPage />} />
       </Route>
       
       {/* Interview Routes with Sidebar - Role-based Protection */}
@@ -109,7 +110,6 @@ const AppRoutes: React.FC = () => {
           <InterviewLayout />
         </ProtectedRoute>
       }>
-        <Route path="/resume" element={<ResumeAnalyzerPage />} />
       </Route>
       
       {/* Admin Routes - Admin Role Required */}
