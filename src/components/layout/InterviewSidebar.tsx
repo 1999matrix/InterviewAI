@@ -33,12 +33,12 @@ const InterviewSidebar: React.FC<InterviewSidebarProps> = ({ isOpen, toggleSideb
   ];
   
   // Determine sidebar classes based on isOpen state
-  const sidebarClasses = `bg-white h-[calc(100vh-4rem)] transition-all duration-300 border-r shadow-sm fixed top-16 left-0 z-40 ${
-    isOpen ? 'w-64' : 'w-0 -translate-x-full md:w-20 md:translate-x-0'
-  }`;
+  // const sidebarClasses = `bg-white h-[calc(100vh-4rem)] transition-all duration-300 border-r shadow-sm fixed top-16 left-0 z-40 ${
+  //   isOpen ? 'w-64' : 'w-0 -translate-x-full md:w-20 md:translate-x-0'
+  // }`;
   
   return (
-    <div className={sidebarClasses}>
+    <div className="bg-gradient-to-b from-blue-200 to-rose-300 rounded-e-xl">
       <div className="h-full flex flex-col overflow-y-auto">
         <div className="p-4">
           <div className="flex flex-col gap-2">

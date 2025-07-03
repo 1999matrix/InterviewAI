@@ -24,6 +24,7 @@ import ResumeAnalyzerPage from '../pages/resume/ResumeAnalyzerPage';
 import CodingTestPage from '../pages/interview/CodingTestPage';
 import AptitudeTestPage from '../pages/interview/AptitudeTestPage';
 import KeycloakTestPage from '../pages/KeycloakTestPage';
+import Scheduler from '../pages/user/Scheduler';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -77,9 +78,7 @@ const AppRoutes: React.FC = () => {
           // </ProtectedRoute>
         } />
         <Route path="/interview/schedule" element={
-          <ProtectedRoute>
-            <div>Schedule Mock Interview</div>
-          </ProtectedRoute>
+          <Scheduler />
         } />
         <Route path="/interview/blogs" element={
           <ProtectedRoute>

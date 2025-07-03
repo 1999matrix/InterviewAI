@@ -226,8 +226,8 @@ const CreateSessionPage: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Create Interview Session</h1>
-        <p className="text-gray-600">Set up your practice interview session with the options below.</p>
+        <h1 className="text-2xl font-bold text-gray-100">Create Interview Session</h1>
+        <p className="text-gray-300">Set up your practice interview session with the options below.</p>
       </div>
       
       {/* Progress Steps */}
@@ -240,7 +240,7 @@ const CreateSessionPage: React.FC = () => {
               {currentStep > 1 ? <Check size={16} /> : '1'}
             </div>
             <div className={`ml-2 text-sm font-medium ${
-              currentStep >= 1 ? 'text-gray-900' : 'text-gray-500'
+              currentStep >= 1 ? 'text-green-300' : 'text-red-400'
             }`}>
               Interview Type
             </div>
@@ -257,7 +257,7 @@ const CreateSessionPage: React.FC = () => {
               {currentStep > 2 ? <Check size={16} /> : '2'}
             </div>
             <div className={`ml-2 text-sm font-medium ${
-              currentStep >= 2 ? 'text-gray-900' : 'text-gray-500'
+              currentStep >= 2 ? 'text-green-300' : 'text-red-400'
             }`}>
               Resume
             </div>
@@ -274,7 +274,7 @@ const CreateSessionPage: React.FC = () => {
               {currentStep > 3 && formData.uploadResume ? <Check size={16} /> : '3'}
             </div>
             <div className={`ml-2 text-sm font-medium ${
-              currentStep >= 3 && formData.uploadResume ? 'text-gray-900' : 'text-gray-500'
+              currentStep >= 3 && formData.uploadResume ? 'text-green-300' : 'text-red-400'
             }`}>
               {formData.uploadResume ? 'Upload' : 'Job Details'}
             </div>
@@ -293,7 +293,7 @@ const CreateSessionPage: React.FC = () => {
                   {currentStep > 4 ? <Check size={16} /> : '4'}
                 </div>
                 <div className={`ml-2 text-sm font-medium ${
-                  currentStep >= 4 ? 'text-gray-900' : 'text-gray-500'
+                  currentStep >= 4 ? 'text-green-300' : 'text-red-400'
                 }`}>
                   Job Details
                 </div>
@@ -307,8 +307,8 @@ const CreateSessionPage: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm p-8 mb-6">
         {currentStep === 1 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold mb-4">Select Interview Mode</h2>
-            <p className="text-gray-600 mb-8">Choose your interview experience.</p>
+            <h2 className="text-xl font-semibold mb-4 text-stone-800">Select Interview Mode</h2>
+            <p className="text-stone-700 mb-8">Choose your interview experience.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <button
                 type="button"
@@ -322,9 +322,9 @@ const CreateSessionPage: React.FC = () => {
                 <div className="mb-2">
                   <Briefcase size={32} className="text-blue-600" />
                 </div>
-                <h3 className="text-lg font-medium">No Cross-Questioning</h3>
-                <p className="text-gray-500 text-sm mt-2 text-center">
-                  Standard interview (Comp2): No follow-up questions.
+                <h3 className="text-lg font-medium text-stone-800">No Cross-Questioning</h3>
+                <p className="text-stone-700 text-sm mt-2 text-center">
+                  Standard interview : No follow-up questions asked (Replicate L1 interview).
                 </p>
               </button>
               <button
@@ -339,9 +339,9 @@ const CreateSessionPage: React.FC = () => {
                 <div className="mb-2">
                   <Brain size={32} className="text-blue-600" />
                 </div>
-                <h3 className="text-lg font-medium">With Cross-Questioning</h3>
-                <p className="text-gray-500 text-sm mt-2 text-center">
-                  Dynamic interview (Comp3): Get follow-up questions based on your answers.
+                <h3 className="text-lg font-medium text-stone-800">With Cross-Questioning</h3>
+                <p className="text-stone-700 text-sm mt-2 text-center">
+                  Dynamic interview : Get follow-up questions based on your answers.
                 </p>
               </button>
               <button
@@ -356,9 +356,9 @@ const CreateSessionPage: React.FC = () => {
                 <div className="mb-2">
                   <Code size={32} className="text-blue-600" />
                 </div>
-                <h3 className="text-lg font-medium">Coding Test</h3>
-                <p className="text-gray-500 text-sm mt-2 text-center">
-                  Practice a timed coding assessment with real problems.
+                <h3 className="text-lg font-medium text-stone-800">Coding Test</h3>
+                <p className="text-stone-700 text-sm mt-2 text-center">
+                  Practice a timed coding assessment with real problems asked in the real interviews.
                 </p>
               </button>
               <button
@@ -373,9 +373,9 @@ const CreateSessionPage: React.FC = () => {
                 <div className="mb-2">
                   <Clock size={32} className="text-blue-600" />
                 </div>
-                <h3 className="text-lg font-medium">Aptitude Test</h3>
-                <p className="text-gray-500 text-sm mt-2 text-center">
-                  Professional aptitude exam with timer, question palette, and security features.
+                <h3 className="text-lg font-medium text-stone-800">Aptitude Test</h3>
+                <p className="text-stone-700 text-sm mt-2 text-center">
+                  Professional aptitude exam with timer, question palette.
                 </p>
               </button>
             </div>
@@ -392,7 +392,7 @@ const CreateSessionPage: React.FC = () => {
                   }
                 }}
                 disabled={!formData.interviewMode}
-                className="flex items-center"
+                className="flex items-center px-14"
               >
                 Next
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -403,8 +403,8 @@ const CreateSessionPage: React.FC = () => {
         
         {currentStep === 2 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold mb-4">Add Your Resume</h2>
-            <p className="text-gray-600 mb-8">
+            <h2 className="text-xl font-semibold mb-4 text-stone-800">Add Your Resume</h2>
+            <p className="text-stone-700 mb-8">
               Would you like to upload your resume to receive tailored interview questions?
             </p>
             
@@ -421,8 +421,8 @@ const CreateSessionPage: React.FC = () => {
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
                   <Upload className="w-8 h-8 text-blue-600" />
                 </div>
-                <h3 className="text-lg font-medium">Yes, Upload Resume</h3>
-                <p className="text-gray-500 text-sm mt-2 text-center">
+                <h3 className="text-lg font-medium text-stone-800">Yes, Upload Resume</h3>
+                <p className="text-stone-700 text-sm mt-2 text-center">
                   Get personalized questions based on your experience and skills.
                 </p>
               </button>
@@ -434,24 +434,35 @@ const CreateSessionPage: React.FC = () => {
                     ? 'border-blue-600 ring-2 ring-blue-200 bg-blue-50'
                     : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
                 }`}
-                onClick={() => handleResumeOptionSelect(false)}
+                onClick={() => setCurrentStep(3)}
               >
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
                   <FileText className="w-8 h-8 text-blue-600" />
                 </div>
-                <h3 className="text-lg font-medium">No, Skip This Step</h3>
-                <p className="text-gray-500 text-sm mt-2 text-center">
+                <h3 className="text-lg font-medium text-stone-800">No, Skip This Step</h3>
+                <p className="text-stone-700 text-sm mt-2 text-center">
                   You'll still get quality questions based on your job role and experience level.
                 </p>
               </button>
+            </div>
+            <div className="flex justify-between mt-10">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePrevStep}
+                className="flex items-center"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
             </div>
           </div>
         )}
         
         {currentStep === 3 && formData.uploadResume && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold mb-4">Upload Your Resume</h2>
-            <p className="text-gray-600 mb-8">
+            <h2 className="text-xl font-semibold mb-4 text-stone-800">Upload Your Resume</h2>
+            <p className="text-stone-700 mb-8">
               Upload your resume in PDF format. We'll use this to tailor your interview questions.
             </p>
             
@@ -463,8 +474,8 @@ const CreateSessionPage: React.FC = () => {
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">Drag and drop your resume</h3>
-                <p className="text-gray-500 text-sm mb-4">or click to browse (PDF only, max 5MB)</p>
+                <h3 className="text-lg font-medium mb-2 text-stone-800">Drag and drop your resume</h3>
+                <p className="text-stone-700 text-sm mb-4">or click to browse (PDF only, max 5MB)</p>
                 
                 <input
                   type="file"
@@ -476,7 +487,7 @@ const CreateSessionPage: React.FC = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  className="mx-auto mt-2"
+                  className="mx-auto mt-2 px-20"
                   onClick={(e) => {
                     e.stopPropagation();
                     fileInputRef.current?.click();
@@ -497,15 +508,15 @@ const CreateSessionPage: React.FC = () => {
                       <FileText className="w-8 h-8 text-blue-600" />
                     </div>
                     <div className="ml-3">
-                      <p className="font-medium">{fileName}</p>
-                      <p className="text-sm text-gray-500">PDF Document</p>
+                      <p className="font-medium text-stone-800">{fileName}</p>
+                      <p className="text-sm text-stone-700">PDF Document</p>
                     </div>
                   </div>
                   
                   <button
                     type="button"
                     onClick={removeFile}
-                    className="text-gray-500 hover:text-red-500"
+                    className="text-stone-700 hover:text-red-500"
                   >
                     <XCircle className="w-5 h-5" />
                   </button>
@@ -539,8 +550,8 @@ const CreateSessionPage: React.FC = () => {
         
         {((currentStep === 4 && formData.uploadResume) || (currentStep === 3 && !formData.uploadResume)) && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold mb-4">Job Details</h2>
-            <p className="text-gray-600 mb-8">
+            <h2 className="text-xl font-semibold mb-4 text-stone-800">Job Details</h2>
+            <p className="text-stone-700 mb-8">
               Provide information about the job you're preparing for.
             </p>
             
