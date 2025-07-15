@@ -1057,7 +1057,7 @@ const ResumeAnalyzerPage: React.FC = () => {
       let atsAnalysisObj: ATSAnalysis | null = null;
       let breakdownText = '';
       try {
-        const response = await fetch(`${import.meta.env.VITE_APP_API_BASE}/api/v1/analyze_cv`, {
+        const response = await fetch(`${import.meta.env.VITE_APP_API_BASE}/analyze_cv`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ cv_text: text }),

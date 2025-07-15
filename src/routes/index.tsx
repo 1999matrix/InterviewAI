@@ -24,7 +24,7 @@ import ResumeAnalyzerPage from '../pages/resume/ResumeAnalyzerPage';
 import CodingTestPage from '../pages/interview/CodingTestPage';
 import AptitudeTestPage from '../pages/interview/AptitudeTestPage';
 import KeycloakTestPage from '../pages/KeycloakTestPage';
-import Scheduler from '../pages/user/Scheduler';
+// import Scheduler from '../pages/user/Scheduler';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -77,9 +77,9 @@ const AppRoutes: React.FC = () => {
             <AptitudeTestPage />
           // </ProtectedRoute>
         } />
-        <Route path="/interview/schedule" element={
+        {/* <Route path="/interview/schedule" element={
           <Scheduler />
-        } />
+        } /> */}
         <Route path="/interview/blogs" element={
           <ProtectedRoute>
             <div>Blogs</div>

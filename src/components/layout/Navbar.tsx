@@ -160,7 +160,7 @@ const Navbar: React.FC = () => {
   );
 };
 
-const NavLinks: React.FC = () => (
+const NavLinks: React.FC = () => (  
   <div className="flex items-center space-x-4">
     <Link to="/interview/profile" className="nav-link group">
       <div className="flex items-center">

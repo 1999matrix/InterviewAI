@@ -126,7 +126,8 @@ const getNextQuestionComp3 = (user: string, response: string) => {
     }, {
         responseType: 'blob', // Important: Handle audio response
         headers: {
-            'Accept': 'audio/mpeg, application/json'
+            'Accept': 'audio/mpeg, application/json',
+            'Content-Type': 'application/json'
         }
     });
 };
@@ -141,7 +142,7 @@ const getUserResultComp2 = (url: string, username: string) => {
 
 // Add speech-to-text functionality for audio recordings
 const convertSpeechToText = async (audioBlob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async(resolve, reject) => {
         try {
             // For now, we'll return a placeholder response
             // In production, you would send the audio blob to a speech-to-text service
@@ -222,34 +223,62 @@ const handleServerAudioResponse = async (response: any): Promise<{ questionText:
         console.log('Response data type:', typeof response.data);
         console.log('Response data instanceof Blob:', response.data instanceof Blob);
         console.log('Response data size:', response.data?.size);
+        console.log('Response content-type:', response.headers['content-type']);
         
-        // Extract question text from headers (case-insensitive)
-        const headers = response.headers;
-        questionText = headers['x-question-text'] || 
-                     headers['X-Question-Text'] || 
-                     headers['X-QUESTION-TEXT'] ||
-                     headers['x-question-text'.toLowerCase()] || 
-                     '';
-        
-        console.log('Extracted question text:', questionText);
-        console.log('headers>>>:', headers);
-        
-        // Check if response contains audio (blob)
-        if (response.data instanceof Blob && response.data.size > 0) {
-            // Create object URL for audio playback
-            audioUrl = URL.createObjectURL(response.data);
-            console.log('Created audio URL:', audioUrl);
+        // Check if response is JSON (completion case)
+        if (response.headers['content-type']?.includes('application/json')) {
+            // Handle JSON response - interview completed
+            try {
+                const textContent = await response.data.text();
+                const jsonResponse = JSON.parse(textContent);
+                
+                if (jsonResponse.status === 'completed') {
+                    throw new Error('Interview completed');
+                }
+            } catch (error) {
+                if (error instanceof Error && error.message === 'Interview completed') {
+                    throw error;
+                }
+                // If parsing fails, continue with blob handling
+            }
         }
         
-        // If no question text found, this is an error
-        if (!questionText) {
-            console.error('No question text found in headers. Available headers:', Object.keys(headers));
-            throw new Error('No question text received from server. Check API response headers.');
+        // Handle audio streaming response
+        if (response.headers['content-type']?.includes('audio/mpeg')) {
+            // Extract question text from headers (case-insensitive)
+            const headers = response.headers;
+            questionText = headers['x-question-text'] || 
+                         headers['X-Question-Text'] || 
+                         headers['X-QUESTION-TEXT'] ||
+                         headers['x-question-text'.toLowerCase()] || 
+                         '';
+            
+            console.log('Extracted question text:', questionText);
+            
+            // Check if response contains audio (blob)
+            if (response.data instanceof Blob && response.data.size > 0) {
+                // Create object URL for audio playback
+                audioUrl = URL.createObjectURL(response.data);
+                console.log('Created audio URL:', audioUrl);
+            }
+            
+            // If no question text found, this is an error
+            if (!questionText) {
+                console.error('No question text found in headers. Available headers:', Object.keys(headers));
+                throw new Error('No question text received from server. Check API response headers.');
+            }
+            
+            return { questionText, audioUrl };
         }
         
-        return { questionText, audioUrl };
+        // If we get here, unknown response format
+        throw new Error('Unknown response format from server');
+        
     } catch (error) {
         console.error('Error processing server audio response:', error);
+        if (error instanceof Error && error.message === 'Interview completed') {
+            throw error;
+        }
         throw new Error(`Failed to process server audio response: ${error}`);
     }
 };

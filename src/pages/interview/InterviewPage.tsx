@@ -568,41 +568,43 @@ const InterviewPage: React.FC = () => {
       const result = await sendTextResponse(username, textResponse, interviewMode);
 
       if (result && result.status === 200) {
-        // Check if it's a completion response (JSON)
-        if (result.headers['content-type']?.includes('application/json')) {
-          // Parse JSON response for completion
-          const jsonResponse = JSON.parse(await result.data.text());
-          if (jsonResponse.status === 'completed') {
+        try {
+          // Handle server audio response - this will throw an error if interview is completed
+          const { questionText, audioUrl } = await handleServerAudioResponse(result);
+          
+          if (questionText) {
+            setCurrentQuestion(questionText);
+            setCurrentAudioUrl(audioUrl || null);
+            setQuestionNumber(prev => prev + 1);
+            resetRecording();
+            
+            // Auto-play the next question
+            if (audioUrl && isInterviewerAudioEnabled) {
+              setTimeout(() => {
+                playQuestionAudio(audioUrl);
+              }, 500);
+            }
+          } else {
+            // Interview completed
+            setSessionActive(false);
+          }
+        } catch (responseError: any) {
+          // Check if this is an interview completion
+          if (responseError.message === 'Interview completed') {
             setSessionActive(false);
             return;
+          } else {
+            throw responseError;
           }
-        }
-        
-        // Handle server audio response
-        const { questionText, audioUrl } = await handleServerAudioResponse(result);
-        
-        if (questionText) {
-          setCurrentQuestion(questionText);
-          setCurrentAudioUrl(audioUrl || null);
-          setQuestionNumber(prev => prev + 1);
-          resetRecording();
-          
-          // Auto-play the next question
-          if (audioUrl && isInterviewerAudioEnabled) {
-            setTimeout(() => {
-              playQuestionAudio(audioUrl);
-            }, 500);
-          }
-        } else {
-          // Interview completed
-          setSessionActive(false);
         }
       } else {
         throw new Error('Failed to get next question');
       }
     } catch (error: any) {
       console.error('Error in handleSubmitAnswer:', error);
-      if (error.message?.includes('completed') || error.message?.includes('No more questions')) {
+      if (error.message?.includes('completed') || 
+          error.message?.includes('No more questions') || 
+          error.message === 'Interview completed') {
         setSessionActive(false);
       } else {
         setError(error.message || 'Failed to submit answer. Please try again.');
@@ -630,7 +632,7 @@ const InterviewPage: React.FC = () => {
 
     setIsSubmittingAnswer(true);
     try {
-      await getUserResultComp2('get_user_result_comp2', username);
+      await getUserResultComp2('api/v1/get_user_result_comp2', username);
       setSessionActive(false);
       navigate('/dashboard', { 
         state: { message: 'Interview completed successfully!' }
