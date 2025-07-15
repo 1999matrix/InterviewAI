@@ -611,8 +611,8 @@ const CodingTestPage: React.FC = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-xl font-semibold">Coding Interview Assessment</h1>
-              <p className="text-gray-600 text-sm">
+              <h1 className="text-xl font-semibold text-stone-900">Coding Interview Assessment</h1>
+              <p className="text-stone-700 text-sm">
                 Problem {currentProblemIndex + 1}/{SAMPLE_PROBLEMS.length} - {currentProblem.title}
               </p>
             </div>
@@ -631,7 +631,7 @@ const CodingTestPage: React.FC = () => {
               <select
                 value={selectedLanguage}
                 onChange={(e) => setSelectedLanguage(e.target.value as LanguageId)}
-                className="bg-gray-100 border border-gray-300 text-gray-700 rounded-md py-1 px-3 text-sm"
+                className="bg-gray-200 border border-gray-500 text-stone-900 rounded-md py-1 px-3 text-sm"
               >
                 {LANGUAGES.map(lang => (
                   <option key={lang.id} value={lang.id}>{lang.name}</option>
@@ -641,9 +641,9 @@ const CodingTestPage: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={() => {}}
-                className="text-sm py-1"
+                className="text-sm py-1 bg-red-500"
               >
-                <Settings className="w-4 h-4 mr-1.5" />
+                <Settings className="w-4 h-4 mr-1.5 text-stone-950" />
                 Settings
               </Button>
             </div>
@@ -651,7 +651,7 @@ const CodingTestPage: React.FC = () => {
         </div>
       </div>
       
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-6 py-8 text-stone-700">
         <div className="grid grid-cols-12 gap-6">
           {/* Problem description */}
           <div className="col-span-12 lg:col-span-5 space-y-6">

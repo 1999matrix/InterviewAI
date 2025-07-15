@@ -433,18 +433,18 @@ const AptitudeTestPage: React.FC = () => {
   // Instructions page
   if (showInstructions) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
+      <div className="min-h-screen bg-slate-300 p-4">
         <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-sm">
           <div className="p-8">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Aptitude Test Instructions</h1>
-              <p className="text-gray-600">Please read all instructions carefully before starting the exam</p>
+              <h1 className="text-3xl font-bold text-stone-900 mb-2">Aptitude Test Instructions</h1>
+              <p className="text-stone-600">Please read all instructions carefully before starting the exam</p>
             </div>
             
             <div className="space-y-6 text-sm">
               <div className="border-l-4 border-blue-500 pl-4">
-                <h3 className="font-semibold text-lg mb-2">General Instructions</h3>
-                <ul className="space-y-2 text-gray-700">
+                <h3 className="font-semibold text-lg mb-2 text-stone-700">General Instructions</h3>
+                <ul className="space-y-2 text-stone-700">
                   <li>• Total Duration: 60 minutes</li>
                   <li>• Total Questions: {questions.length}</li>
                   <li>• This is a computer-based test</li>
@@ -454,8 +454,8 @@ const AptitudeTestPage: React.FC = () => {
               </div>
               
               <div className="border-l-4 border-green-500 pl-4">
-                <h3 className="font-semibold text-lg mb-2">Marking Scheme</h3>
-                <ul className="space-y-2 text-gray-700">
+                <h3 className="font-semibold text-lg mb-2 text-stone-700">Marking Scheme</h3>
+                <ul className="space-y-2 text-stone-700">
                   <li>• Each correct answer carries positive marks as specified</li>
                   <li>• Incorrect answers may have negative marking</li>
                   <li>• No marks for unanswered questions</li>
@@ -463,8 +463,8 @@ const AptitudeTestPage: React.FC = () => {
               </div>
               
               <div className="border-l-4 border-yellow-500 pl-4">
-                <h3 className="font-semibold text-lg mb-2">Navigation</h3>
-                <ul className="space-y-2 text-gray-700">
+                <h3 className="font-semibold text-lg mb-2 text-stone-700">Navigation</h3>
+                <ul className="space-y-2 text-stone-700">
                   <li>• Use question palette to navigate between questions</li>
                   <li>• Questions are color-coded based on status</li>
                   <li>• You can mark questions for review</li>
@@ -473,8 +473,8 @@ const AptitudeTestPage: React.FC = () => {
               </div>
               
               <div className="border-l-4 border-red-500 pl-4">
-                <h3 className="font-semibold text-lg mb-2">Security Guidelines</h3>
-                <ul className="space-y-2 text-gray-700">
+                <h3 className="font-semibold text-lg mb-2 text-stone-700">Security Guidelines</h3>
+                <ul className="space-y-2 text-stone-700">
                   <li>• Do not switch tabs or minimize the browser</li>
                   <li>• Right-click and copy-paste are disabled</li>
                   <li>• Calculator and scratchpad tools are provided</li>
@@ -482,27 +482,27 @@ const AptitudeTestPage: React.FC = () => {
                 </ul>
               </div>
               
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Question Status Legend</h3>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-gray-200 rounded"></div>
+              <div className="bg-gray-200 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2 text-stone-700">Question Status Legend</h3>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs text-stone-800">
+                  <div className="flex items-center space-x-2 ">
+                    <div className="w-4 h-4 bg-gray-400 rounded"></div>
                     <span>Not Visited</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-red-100 border border-red-300 rounded"></div>
+                    <div className="w-4 h-4 bg-red-200 border border-red-500 rounded"></div>
                     <span>Not Answered</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
+                    <div className="w-4 h-4 bg-green-200 border border-green-500 rounded"></div>
                     <span>Answered</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-purple-100 border border-purple-300 rounded"></div>
+                    <div className="w-4 h-4 bg-purple-200 border border-purple-500 rounded"></div>
                     <span>Marked for Review</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
+                    <div className="w-4 h-4 bg-blue-200 border border-blue-500 rounded"></div>
                     <span>Answered & Marked</span>
                   </div>
                 </div>
@@ -589,7 +589,7 @@ const AptitudeTestPage: React.FC = () => {
               <AlertTriangle className="w-6 h-6" />
               <h3 className="text-lg font-semibold">Time Warning</h3>
             </div>
-            <p className="text-gray-700 mb-4">
+            <p className="text-stone-700 mb-4">
               {timeRemaining <= 300 ? 'Only 5 minutes remaining!' :
                timeRemaining <= 900 ? 'Only 15 minutes remaining!' :
                '30 minutes remaining!'}
@@ -610,10 +610,10 @@ const AptitudeTestPage: React.FC = () => {
         {showQuestionPalette && (
           <div className="w-80 bg-white shadow-sm border-r p-4">
             <div className="mb-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Question Palette</h3>
-              <div className="text-xs text-gray-600 space-y-1">
+              <h3 className="font-semibold text-stone-900 mb-2">Question Palette</h3>
+              <div className="text-xs text-gray-stone space-y-1">
                 <div>Total: {questions.length}</div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 text-stone-700 font-bold">
                   <div>Answered: {statusSummary.answered + statusSummary['answered-and-marked']}</div>
                   <div>Not Answered: {statusSummary['not-answered']}</div>
                   <div>Marked: {statusSummary['marked-for-review'] + statusSummary['answered-and-marked']}</div>
@@ -676,10 +676,10 @@ const AptitudeTestPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-4">
-                  <span className="text-sm font-medium text-gray-500">
+                  <span className="text-sm font-medium text-stone-700">
                     Question {currentQuestionIndex + 1} of {questions.length}
                   </span>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-stone-700">
                     {getCurrentQuestion()?.subject} | {getCurrentQuestion()?.difficulty}
                   </span>
                   <span className="text-sm text-green-600 font-medium">
@@ -703,7 +703,7 @@ const AptitudeTestPage: React.FC = () => {
               
               {/* Question content */}
               <div className="mb-6">
-                <p className="text-lg text-gray-900 leading-relaxed">
+                <p className="text-lg text-stone-900 leading-relaxed">
                   {getCurrentQuestion()?.question}
                 </p>
               </div>
@@ -718,16 +718,16 @@ const AptitudeTestPage: React.FC = () => {
                     <label
                       key={index}
                       className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                        isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                        isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-400 hover:border-blue-300 hover:bg-blue-50'
                       }`}
                     >
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                        isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-400'
                       }`}>
                         {isSelected && <div className="w-2 h-2 bg-white rounded-full"></div>}
                       </div>
-                      <span className="font-medium text-gray-700 min-w-[20px]">{optionLabel}.</span>
-                      <span className="text-gray-900">{option}</span>
+                      <span className="font-medium text-stone-700 min-w-[20px]">{optionLabel}.</span>
+                      <span className="text-stone-900">{option}</span>
                       <input
                         type="radio"
                         name={`question-${getCurrentQuestion()?.id}`}
@@ -757,8 +757,8 @@ const AptitudeTestPage: React.FC = () => {
                       }`}>
                         {isSelected && <CheckSquare className="w-3 h-3 text-white" />}
                       </div>
-                      <span className="font-medium text-gray-700 min-w-[20px]">{optionLabel}.</span>
-                      <span className="text-gray-900">{option}</span>
+                      <span className="font-medium text-stone-700 min-w-[20px]">{optionLabel}.</span>
+                      <span className="text-stone-900">{option}</span>
                       <input
                         type="checkbox"
                         checked={isSelected}
@@ -776,7 +776,7 @@ const AptitudeTestPage: React.FC = () => {
                 
                 {getCurrentQuestion()?.type === 'NAT' && (
                   <div className="space-y-3">
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-stone-700">
                       Enter your numerical answer:
                     </label>
                     <input
@@ -881,9 +881,9 @@ const AptitudeTestPage: React.FC = () => {
       
       {/* Calculator modal */}
       {showCalculator && (
-        <div className="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg border p-4 w-64 z-40">
+        <div className="fixed bottom-4 right-4 bg-gradient-to-r from-rose-300 to-blue-400 rounded-lg shadow-lg border p-4 w-64 z-40">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-medium">Calculator</h3>
+            <h3 className="font-medium text-stone-700">Calculator</h3>
             <Button
               variant="outline"
               size="sm"
@@ -894,21 +894,19 @@ const AptitudeTestPage: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <div className="bg-gray-100 p-2 rounded text-right font-mono">
+            <div className="bg-gray-100 p-2 rounded text-right font-mono text-stone-700 font-bold">
               {calculatorDisplay}
             </div>
             
-            <div className="grid grid-cols-4 gap-2">
-              {['C', '÷', '×', '⌫', '7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '=', '0', '.', '00', '='].map((btn, index) => (
-                <Button
+            <div className="grid grid-cols-4 gap-2 bg-slate-600 p-1">
+              {['C', '÷', '×', '⌫', '7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '0', '.', '00', '='].map((btn, index) => (
+                <button
                   key={index}
-                  variant="outline"
-                  size="sm"
                   onClick={() => handleCalculatorInput(btn)}
-                  className={`h-10 ${btn === '=' ? 'col-span-2 bg-blue-500 text-white' : ''}`}
+                  className={`h-10 ${btn === '=' ? 'col-span-2 bg-gray-500 text-white' : ''}, bg-slate-500 rounded-md`}
                 >
                   {btn}
-                </Button>
+                </button>
               ))}
             </div>
           </div>
@@ -942,12 +940,12 @@ const AptitudeTestPage: React.FC = () => {
       {showSubmissionDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4">Submit Exam</h3>
-            <p className="text-gray-700 mb-4">
+            <h3 className="text-lg font-semibold mb-4 text-stone-800">Submit Exam</h3>
+            <p className="text-stone-700 mb-4">
               Are you sure you want to submit your exam? This action cannot be undone.
             </p>
             
-            <div className="bg-gray-50 p-3 rounded mb-4 text-sm">
+            <div className="bg-gray-200 p-3 rounded mb-4 text-sm text-stone-700">
               <div className="grid grid-cols-2 gap-2">
                 <div>Total Questions: {questions.length}</div>
                 <div>Answered: {statusSummary.answered + statusSummary['answered-and-marked']}</div>

@@ -51,11 +51,11 @@ const ProfilePage: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 theme-transition flex mb-2 w-full">
+    <div className="space-y-6 theme-transition flex mb-2 w-screen">
         <InterviewSidebar isOpen={true} toggleSidebar={function (): void {
           throw new Error("Function not implemented.");
         } } />
-      <div className="m-2 space-y-6 theme-transition">
+      <div className="m-2 space-y-6 theme-transition w-full">
         <div className="flex items-center justify-between">
           <div className="ml-6">
             <h1 className="text-2xl font-bold dark:text-white">
