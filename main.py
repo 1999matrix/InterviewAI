@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Response, UploadFile, File, Form, Request, BackgroundTasks, Depends
+from fastapi import FastAPI, HTTPException, Response, UploadFile, File, Form, Request, BackgroundTasks, Depends, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -15,6 +15,7 @@ from src.component.comp2.next import QuestionManagerComp2
 from src.component.comp2.cv_to_db import UserCVHandler
 from src.component.comp3.start_test import QuestionFetcherComp3
 from src.component.comp3.next import QuestionManagerComp3
+from src.component.comp3.websocket_interview import websocket_manager
 from dotenv import load_dotenv
 from src.utils import create_database
 from src.database_config.user_cv.user_cv_table import create_user_cv_table
@@ -457,6 +458,47 @@ async def get_next_question_comp3(
     except Exception as e:
         logger.error(f"Unexpected error in get_next_question_comp3: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# WebSocket endpoint for real-time interview communication (comp3)
+@app.websocket("/ws/interview_comp3/{username}")
+async def websocket_interview_comp3(websocket: WebSocket, username: str):
+    """
+    WebSocket endpoint for real-time interview communication in comp3
+    
+    Message format (from client):
+    {
+        "type": "start_interview",
+        "role": "Software Engineer",
+        "job_description": "...",
+        "experience": "3",
+        "cv_flag": true
+    }
+    
+    {
+        "type": "user_response",
+        "text": "My answer to the question..."
+    }
+    
+    Message format (to client):
+    {
+        "type": "question",
+        "text": "What is your experience with Python?",
+        "audio": "base64_encoded_audio",
+        "question_number": 1
+    }
+    
+    {
+        "type": "typing",
+        "is_typing": true
+    }
+    
+    {
+        "type": "completed",
+        "message": "Interview completed",
+        "final_score": 85.5
+    }
+    """
+    await websocket_manager.handle_websocket_communication(websocket, username)
 
 # Health check endpoint
 @app.get("/health")

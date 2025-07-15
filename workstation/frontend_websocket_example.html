@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Interview - WebSocket Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .question-area {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            min-height: 100px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .primary-btn {
+            background-color: #2196f3;
+            color: white;
+        }
+        .primary-btn:hover {
+            background-color: #1976d2;
+        }
+        .danger-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        .danger-btn:hover {
+            background-color: #d32f2f;
+        }
+        .success-btn {
+            background-color: #4caf50;
+            color: white;
+        }
+        .success-btn:hover {
+            background-color: #388e3c;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .status.connected {
+            background-color: #c8e6c9;
+            color: #2e7d32;
+        }
+        .status.disconnected {
+            background-color: #ffcdd2;
+            color: #c62828;
+        }
+        .status.typing {
+            background-color: #fff3e0;
+            color: #ef6c00;
+        }
+        .input-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        .response-area {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            min-height: 60px;
+        }
+        .audio-player {
+            margin: 10px 0;
+        }
+        .hidden {
+            display: none;
+        }
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            color: #666;
+            font-style: italic;
+        }
+        .typing-dots {
+            display: flex;
+            gap: 3px;
+        }
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #999;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes typing {
+            0%, 80%, 100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Real-time AI Interview - WebSocket Demo</h1>
+        
+        <!-- Connection Status -->
+        <div id="statusIndicator" class="status disconnected">
+            Disconnected
+        </div>
+
+        <!-- Interview Setup Form -->
+        <div id="setupForm">
+            <div class="input-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" value="demo_user" />
+            </div>
+            <div class="input-group">
+                <label for="role">Role:</label>
+                <input type="text" id="role" value="Software Engineer" />
+            </div>
+            <div class="input-group">
+                <label for="experience">Experience (years):</label>
+                <input type="number" id="experience" value="3" />
+            </div>
+            <div class="input-group">
+                <label for="jobDescription">Job Description:</label>
+                <textarea id="jobDescription" placeholder="Enter job description here...">We are looking for a skilled software engineer with experience in Python, React, and database design.</textarea>
+            </div>
+            <div class="controls">
+                <button class="primary-btn" onclick="connectWebSocket()">Connect & Start Interview</button>
+            </div>
+        </div>
+
+        <!-- Interview Interface -->
+        <div id="interviewInterface" class="hidden">
+            <!-- Current Question -->
+            <div class="question-area">
+                <h3>Current Question:</h3>
+                <p id="currentQuestion">Waiting for first question...</p>
+                <div class="typing-indicator" id="typingIndicator">
+                    <span>AI is thinking</span>
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+                <audio id="questionAudio" class="audio-player" controls></audio>
+            </div>
+
+            <!-- Response Input -->
+            <div class="response-area">
+                <h4>Your Response:</h4>
+                <textarea id="responseText" placeholder="Type your answer here or use speech-to-text..."></textarea>
+                <div class="controls">
+                    <button class="primary-btn" onclick="startSpeechRecognition()" id="speechBtn">🎤 Start Speaking</button>
+                    <button class="success-btn" onclick="sendResponse()">Send Response</button>
+                    <button class="danger-btn" onclick="endInterview()">End Interview</button>
+                </div>
+            </div>
+
+            <!-- Interview Progress -->
+            <div id="interviewProgress">
+                <p>Question Number: <span id="questionNumber">-</span></p>
+                <p>Last Score: <span id="lastScore">-</span></p>
+            </div>
+        </div>
+
+        <!-- Completed Interview -->
+        <div id="completedInterface" class="hidden">
+            <h3>🎉 Interview Completed!</h3>
+            <p id="finalMessage"></p>
+            <p>Final Score: <span id="finalScore">-</span></p>
+            <button class="primary-btn" onclick="resetInterview()">Start New Interview</button>
+        </div>
+    </div>
+
+    <script>
+        let websocket = null;
+        let recognition = null;
+        let isRecording = false;
+
+        // Initialize speech recognition if available
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('responseText').value = transcript;
+                updateSpeechButton(false);
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                updateSpeechButton(false);
+            };
+
+            recognition.onend = function() {
+                updateSpeechButton(false);
+            };
+        }
+
+        function connectWebSocket() {
+            const username = document.getElementById('username').value.trim();
+            if (!username) {
+                alert('Please enter a username');
+                return;
+            }
+
+            // Connect to WebSocket
+            websocket = new WebSocket(`ws://localhost:7777/ws/interview_comp3/${username}`);
+
+            websocket.onopen = function(event) {
+                console.log('WebSocket connected');
+                updateStatus('connected', 'Connected - Starting Interview...');
+                
+                // Hide setup form and show interview interface
+                document.getElementById('setupForm').classList.add('hidden');
+                document.getElementById('interviewInterface').classList.remove('hidden');
+
+                // Start the interview
+                startInterview();
+            };
+
+            websocket.onmessage = function(event) {
+                const message = JSON.parse(event.data);
+                handleWebSocketMessage(message);
+            };
+
+            websocket.onclose = function(event) {
+                console.log('WebSocket disconnected');
+                updateStatus('disconnected', 'Disconnected');
+            };
+
+            websocket.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                updateStatus('disconnected', 'Connection Error');
+            };
+        }
+
+        function startInterview() {
+            const message = {
+                type: 'start_interview',
+                role: document.getElementById('role').value,
+                job_description: document.getElementById('jobDescription').value,
+                experience: document.getElementById('experience').value,
+                cv_flag: true
+            };
+            websocket.send(JSON.stringify(message));
+        }
+
+        function handleWebSocketMessage(message) {
+            console.log('Received message:', message);
+
+            switch (message.type) {
+                case 'question':
+                    handleNewQuestion(message);
+                    break;
+                case 'typing':
+                    showTypingIndicator(message.is_typing);
+                    break;
+                case 'completed':
+                    handleInterviewCompleted(message);
+                    break;
+                case 'error':
+                    alert('Error: ' + message.message);
+                    break;
+                case 'pong':
+                    console.log('Received heartbeat response');
+                    break;
+            }
+        }
+
+        function handleNewQuestion(message) {
+            // Update question display
+            document.getElementById('currentQuestion').textContent = message.text;
+            document.getElementById('questionNumber').textContent = message.question_number || '-';
+            
+            // Update last score if available
+            if (message.score !== undefined) {
+                document.getElementById('lastScore').textContent = message.score;
+            }
+
+            // Play audio if available
+            if (message.audio) {
+                const audioElement = document.getElementById('questionAudio');
+                const audioBlob = base64ToBlob(message.audio, 'audio/mpeg');
+                const audioUrl = URL.createObjectURL(audioBlob);
+                audioElement.src = audioUrl;
+                audioElement.play();
+            }
+
+            // Clear previous response
+            document.getElementById('responseText').value = '';
+            
+            updateStatus('connected', 'Question received - Please respond');
+        }
+
+        function sendResponse() {
+            const responseText = document.getElementById('responseText').value.trim();
+            if (!responseText) {
+                alert('Please enter a response');
+                return;
+            }
+
+            const message = {
+                type: 'user_response',
+                text: responseText
+            };
+
+            websocket.send(JSON.stringify(message));
+            updateStatus('connected', 'Response sent - Waiting for next question...');
+        }
+
+        function startSpeechRecognition() {
+            if (!recognition) {
+                alert('Speech recognition not supported in this browser');
+                return;
+            }
+
+            if (isRecording) {
+                recognition.stop();
+                updateSpeechButton(false);
+            } else {
+                recognition.start();
+                updateSpeechButton(true);
+            }
+        }
+
+        function updateSpeechButton(recording) {
+            isRecording = recording;
+            const button = document.getElementById('speechBtn');
+            if (recording) {
+                button.textContent = '🔴 Stop Recording';
+                button.style.backgroundColor = '#f44336';
+            } else {
+                button.textContent = '🎤 Start Speaking';
+                button.style.backgroundColor = '#2196f3';
+            }
+        }
+
+        function showTypingIndicator(isTyping) {
+            const indicator = document.getElementById('typingIndicator');
+            if (isTyping) {
+                indicator.style.display = 'flex';
+                updateStatus('typing', 'AI is generating response...');
+            } else {
+                indicator.style.display = 'none';
+            }
+        }
+
+        function handleInterviewCompleted(message) {
+            document.getElementById('interviewInterface').classList.add('hidden');
+            document.getElementById('completedInterface').classList.remove('hidden');
+            
+            document.getElementById('finalMessage').textContent = message.message;
+            document.getElementById('finalScore').textContent = message.final_score || 'N/A';
+            
+            updateStatus('connected', 'Interview Completed');
+        }
+
+        function endInterview() {
+            if (websocket) {
+                const message = { type: 'end_interview' };
+                websocket.send(JSON.stringify(message));
+                websocket.close();
+            }
+        }
+
+        function resetInterview() {
+            document.getElementById('setupForm').classList.remove('hidden');
+            document.getElementById('interviewInterface').classList.add('hidden');
+            document.getElementById('completedInterface').classList.add('hidden');
+            
+            if (websocket) {
+                websocket.close();
+            }
+            
+            updateStatus('disconnected', 'Disconnected');
+        }
+
+        function updateStatus(type, message) {
+            const statusElement = document.getElementById('statusIndicator');
+            statusElement.className = `status ${type}`;
+            statusElement.textContent = message;
+        }
+
+        // Utility function to convert base64 to blob
+        function base64ToBlob(base64, mimeType) {
+            const byteCharacters = atob(base64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            return new Blob([byteArray], { type: mimeType });
+        }
+
+        // Heartbeat to keep connection alive
+        setInterval(() => {
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+                websocket.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 30000); // Every 30 seconds
+    </script>
+</body>
+</html> 
