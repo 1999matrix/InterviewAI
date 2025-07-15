@@ -18,7 +18,7 @@ from src.component.comp3.next import QuestionManagerComp3
 from dotenv import load_dotenv
 from src.utils import create_database
 from src.database_config.user_cv.user_cv_table import create_user_cv_table
-from src.database_config.question_db.inserting_data_to_mysql import python_table_creation, insert_questions_from_excel
+from src.database_config.question_db.inserting_data_to_db import python_table_creation, insert_questions_from_excel
 from src.database_config.user_manager.user_manager import create_user_history_table
 from src.database_config.user_session.user_session_tables import create_user_test_info_table_1, create_user_test_info_table_2, create_user_test_info_table_3
 import os
@@ -31,7 +31,8 @@ from datetime import datetime, timedelta
 import time
 import logging
 from contextlib import asynccontextmanager
-import mysql.connector.pooling
+import psycopg2
+from psycopg2 import pool
 
 load_dotenv()
 
@@ -49,16 +50,15 @@ request_history: Dict[str, List[float]] = {}
 
 # Database connection pool configuration
 db_config = {
-    'pool_name': 'mypool',
-    'pool_size': 5,
-    'host': os.getenv('mysql_database_host'),
-    'user': os.getenv('mysql_database_user'),
-    'password': os.getenv('mysql_database_password'),
-    'database': os.getenv('database_uq')
+    'host': os.getenv('postgres_database_host'),
+    'user': os.getenv('postgres_database_user'),
+    'password': os.getenv('postgres_database_password'),
+    'database': os.getenv('database_uq'),
+    'port': os.getenv('postgres_database_port')
 }
 
 # Create connection pool
-connection_pool = mysql.connector.pooling.MySQLConnectionPool(**db_config)
+connection_pool = psycopg2.pool.SimpleConnectionPool(1, 5, **db_config)
 
 # Startup and shutdown events
 @asynccontextmanager
@@ -272,6 +272,14 @@ async def get_next_question_comp2(username: str, text: Optional[str] = None):
     next_question_id = question_manager.get_next_question_id_comp2(username)
 
     if next_question_id is not None:
+        # Check if it's a completion status
+        if isinstance(next_question_id, dict) and next_question_id.get('status') == 'completed':
+            return {
+                'status': 'completed',
+                'message': next_question_id.get('message', 'Test completed successfully')
+            }
+        
+        # Regular question - generate audio
         tts_converter = TextToSpeechConverter()
         audio_bytes = await tts_converter.convert_text_to_mp3_bytes_async(str(next_question_id))
         
@@ -348,12 +356,12 @@ async def handle_start_test_comp3(
         
         try:
             result = fetcher.start_session()
-            if not result or 'question' not in result:
+            if not result or 'first_question' not in result:
                 raise HTTPException(status_code=500, detail="Failed to generate initial question")
             
             # Convert text to speech in background
             tts_converter = TextToSpeechConverter()
-            audio_bytes = await tts_converter.convert_text_to_mp3_bytes_async(str(result['question']))
+            audio_bytes = await tts_converter.convert_text_to_mp3_bytes_async(str(result['first_question']))
             
             if audio_bytes is None:
                 raise HTTPException(status_code=500, detail="Failed to generate audio")
@@ -369,7 +377,7 @@ async def handle_start_test_comp3(
                 media_type="audio/mpeg",
                 headers={
                     "Content-Disposition": "attachment; filename=question.mp3",
-                    "X-Question-Text": str(result['question'])
+                    "X-Question-Text": str(result['first_question'])
                 }
             )
 

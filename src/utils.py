@@ -1,10 +1,10 @@
 import speech_recognition as sr
 from dotenv import load_dotenv
 import sys
-import mysql.connector
+import psycopg2
 from dotenv import load_dotenv
 import os
-from mysql.connector import Error
+from psycopg2 import Error
 import fitz  # PyMuPDF
 import io
 import tempfile
@@ -43,16 +43,15 @@ class extract_text_with_pdf:
 
 def connect_to_db():
     try:
-        connection = mysql.connector.connect(
-            host=os.getenv("mysql_database_host"),
-            user=os.getenv("mysql_database_user"),
-            password=os.getenv("mysql_database_password"),
-            database=os.getenv("database_uq")
+        connection = psycopg2.connect(
+            host=os.getenv("postgres_database_host"),
+            user=os.getenv("postgres_database_user"),
+            password=os.getenv("postgres_database_password"),
+            database=os.getenv("database_uq"),
+            port=os.getenv("postgres_database_port")
         )
-        if connection.is_connected():
-            pass
         return connection
-    except mysql.connector.Error as error:
+    except psycopg2.Error as error:
         print("Error:", error)
         return None
 
@@ -71,7 +70,7 @@ def fetch_question(question_table_name, id):
             return question[0]
         else:
             return None
-    except mysql.connector.Error as error:
+    except psycopg2.Error as error:
         print("Error:", error)
         return None
     finally:
@@ -82,26 +81,37 @@ def fetch_question(question_table_name, id):
 
 def create_database(database_name):
     try:
-        # Establish a connection to MySQL server
-        connection = mysql.connector.connect(
-            host=os.getenv("mysql_database_host"),
-            user=os.getenv("mysql_database_user"),
-            password=os.getenv("mysql_database_password"),
+        # Establish a connection to PostgreSQL server
+        connection = psycopg2.connect(
+            host=os.getenv("postgres_database_host"),
+            user=os.getenv("postgres_database_user"),
+            password=os.getenv("postgres_database_password"),
+            port=os.getenv("postgres_database_port"),
+            database="postgres"  # Connect to default postgres database first
         )
-
-        if connection.is_connected():
-            cursor = connection.cursor()
+        
+        connection.autocommit = True  # Enable autocommit for database creation
+        cursor = connection.cursor()
+        
+        # Check if database exists
+        cursor.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = %s", (database_name,))
+        exists = cursor.fetchone()
+        
+        if not exists:
             # Execute SQL to create a database
-            cursor.execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
+            cursor.execute(f"CREATE DATABASE {database_name}")
             print(f"Database '{database_name}' created successfully.")
-            cursor.close()
+        else:
+            print(f"Database '{database_name}' already exists.")
+            
+        cursor.close()
 
     except Error as e:
         print(f"Error: {e}")
     finally:
-        if connection.is_connected():
+        if connection:
             connection.close()
-            print("MySQL connection closed.")
+            print("PostgreSQL connection closed.")
 
 
 def counter_question(previous_question: str, previous_response: str) -> tuple:

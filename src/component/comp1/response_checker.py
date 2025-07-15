@@ -1,4 +1,4 @@
-import mysql.connector
+
 import requests
 import json
 from src.utils import connect_to_db
@@ -47,7 +47,7 @@ class ResponseFetcherComp1:
         except mysql.connector.Error as error:
             print("Error:", error)
         finally:
-            if connection and connection.is_connected():
+            if connection:
                 cursor.close()
                 question_table_cursor.close()
                 connection.close()

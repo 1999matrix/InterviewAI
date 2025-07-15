@@ -1,4 +1,4 @@
-import mysql.connector
+import psycopg2
 import random
 from dotenv import load_dotenv
 import os
@@ -13,25 +13,26 @@ class QuestionFetcher:
         self.level = level
         self._db_connection = None  # Single connection for the database
         self.user_session_database = os.getenv("database_uq")
-        self.mysql_database_password = os.getenv("mysql_database_password")
-        self.mysql_database_user = os.getenv("mysql_database_user")
-        self.mysql_database_host = os.getenv("mysql_database_host")
+        self.postgres_database_password = os.getenv("postgres_database_password")
+        self.postgres_database_user = os.getenv("postgres_database_user")
+        self.postgres_database_host = os.getenv("postgres_database_host")
+        self.postgres_database_port = os.getenv("postgres_database_port")
         self.user_session_table_1 = os.getenv("user_session_table_1")
         self.database_uq = os.getenv("database_uq")
         self.question_table_name = os.getenv("question_table_name")
 
     def connect_to_database(self):
-        """Connect to the MySQL database."""
+        """Connect to the PostgreSQL database."""
         try:
-            self._db_connection = mysql.connector.connect(
-                host=self.mysql_database_host,
-                user=self.mysql_database_user,
-                password=self.mysql_database_password,
-                database=self.database_uq
+            self._db_connection = psycopg2.connect(
+                host=self.postgres_database_host,
+                user=self.postgres_database_user,
+                password=self.postgres_database_password,
+                database=self.database_uq,
+                port=self.postgres_database_port
             )
-            if self._db_connection.is_connected():
-                print("Connected to MySQL Server")
-        except mysql.connector.Error as error:
+            print("Connected to PostgreSQL Server")
+        except psycopg2.Error as error:
             print("Error connecting to the database:", error)
 
     def close_connection(self):
@@ -48,11 +49,11 @@ class QuestionFetcher:
                 cursor = self._db_connection.cursor()
                 # Fetch questions based on topic and level
                 if self.level == "low":
-                    query = ("SELECT id FROM question_table WHERE Topic = %s AND level = 'Low' ORDER BY RAND() LIMIT 2")
+                    query = ("SELECT id FROM question_table WHERE Topic = %s AND level = 'Low' ORDER BY RANDOM() LIMIT 2")
                 elif self.level == "medium":
-                    query = ("SELECT id FROM question_table WHERE Topic = %s AND level = 'Medium' ORDER BY RAND() LIMIT 4")
+                    query = ("SELECT id FROM question_table WHERE Topic = %s AND level = 'Medium' ORDER BY RANDOM() LIMIT 4")
                 elif self.level == "advance":
-                    query = ("SELECT id FROM question_table WHERE Topic = %s AND level = 'High' ORDER BY RAND() LIMIT 6")
+                    query = ("SELECT id FROM question_table WHERE Topic = %s AND level = 'High' ORDER BY RANDOM() LIMIT 6")
                 else:
                     print("Invalid topic or level")
                     return None
@@ -84,7 +85,7 @@ class QuestionFetcher:
                 question = fetch_question(self.question_table_name, first_id)
                 return question
 
-            except mysql.connector.Error as error:
+            except psycopg2.Error as error:
                 print("Error fetching questions:", error)
 
         self.close_connection()
