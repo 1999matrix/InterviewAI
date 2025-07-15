@@ -16,6 +16,7 @@ import ProgressChart from "../../components/dashboard/ProgressChart";
 import RecentInterviewCard from "../../components/dashboard/RecentInterviewCard";
 import ThemeToggle from "../../components/ui/ThemeToggle";
 import InterviewSidebar from "../../components/layout/InterviewSidebar";
+import Sidebar from '../../components/layout/Sidebar';
 import { useTheme } from "../../contexts/ThemeContext";
 
 const ProfilePage: React.FC = () => {
@@ -51,7 +52,7 @@ const ProfilePage: React.FC = () => {
 
   return (
     <div className="space-y-6 theme-transition flex mb-2 w-full">
-      <InterviewSidebar isOpen={true} toggleSidebar={function (): void {
+        <InterviewSidebar isOpen={true} toggleSidebar={function (): void {
           throw new Error("Function not implemented.");
         } } />
       <div className="m-2 space-y-6 theme-transition">
@@ -203,6 +204,9 @@ const ProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
+      <Sidebar isOpen={true} toggleSidebar={function (): void {
+          throw new Error("Function not implemented.");
+        } } />
     </div>
   );
 };

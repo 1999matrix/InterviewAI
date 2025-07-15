@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
+import {
   UserCircle, 
   Calendar, 
   BookOpen, 
@@ -21,6 +21,7 @@ const InterviewSidebar: React.FC<InterviewSidebarProps> = ({ isOpen, toggleSideb
   const location = useLocation();
   
   const sidebarLinks = [
+    { icon: <Users />, label: 'Dashboard', path: '/interview/home' },
     { icon: <UserCircle size={20} />, label: 'Profile', path: '/interview/profile' },
     { icon: <Calendar size={20} />, label: 'Schedule Mock Interview', path: '/interview/schedule' },
     { icon: <Code size={20} />, label: 'Coding Test', path: '/interview/coding-test' },

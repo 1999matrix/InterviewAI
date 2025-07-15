@@ -162,10 +162,10 @@ const Navbar: React.FC = () => {
 
 const NavLinks: React.FC = () => (
   <div className="flex items-center space-x-4">
-    <Link to="/interview/profile" className="nav-link group">
+    <Link to="/interview/home" className="nav-link group">
       <div className="flex items-center">
         <Brain className="w-4 h-4 mr-1 text-blue-500" />
-        <span className="text-base text-stone-700">Interview Prep</span>
+        <span className="text-base text-stone-700">Interview Preperation</span>
       </div>
       <div className="nav-indicator"></div>
     </Link>
