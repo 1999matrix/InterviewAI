@@ -142,24 +142,35 @@ const getUserResultComp2 = (url: string, username: string) => {
 
 // Add speech-to-text functionality for audio recordings
 const convertSpeechToText = async (audioBlob: Blob): Promise<string> => {
-    return new Promise(async(resolve, reject) => {
-        try {
-            // For now, we'll return a placeholder response
-            // In production, you would send the audio blob to a speech-to-text service
-            // or use the Web Speech API with real-time recording
-            
-            console.log('Converting audio blob to text, size:', audioBlob.size);
-            
-            // Simulate processing time
-            setTimeout(() => {
-                resolve("User provided an audio response to the interview question.");
-            }, 500);
-            
-        } catch (error) {
-            reject(new Error(`Speech-to-text conversion failed: ${error}`));
+    return new Promise(async (resolve, reject) => {
+      try {
+        console.log('Converting audio blob to text, size:', audioBlob.size);
+  
+        const formData = new FormData();
+        formData.append("file", audioBlob, "audio.webm"); // or audio.wav/mp3 based on your blob
+        formData.append("model", "whisper-1");
+  
+        const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${import.meta.env.VITE_APP_OPENAI_API_KEY}`
+          },
+          body: formData
+        });
+  
+        if (!response.ok) {
+          const errorText = await response.text();
+          return reject(new Error(`API error: ${response.status} ${errorText}`));
         }
+  
+        const data = await response.json();
+        resolve(data.text);
+      } catch (error) {
+        reject(new Error(`Speech-to-text conversion failed: ${error}`));
+      }
     });
-};
+  };
+  
 
 // Function to send text response for next question
 const sendTextResponse = async (username: string, response: string, interviewMode: 'comp2' | 'comp3'): Promise<any> => {
