@@ -39,7 +39,7 @@
   }
   
   .card-interactive {
-    @apply card hover:shadow-xl hover:scale-[1.02];
+    @apply card hover:shadow-xl hover:scale-[1.01];
   }
 }
 

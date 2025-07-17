@@ -39,7 +39,7 @@ const InterviewSidebar: React.FC<InterviewSidebarProps> = ({ isOpen, toggleSideb
   // }`;
   
   return (
-    <div className="bg-gradient-to-b from-blue-200 to-rose-300 rounded-e-xl">
+    <div className="bg-gradient-to-b from-blue-200 to-rose-300 rounded-e-xl w-80">
       <div className="h-full flex flex-col overflow-y-auto">
         <div className="p-4">
           <div className="flex flex-col gap-2">

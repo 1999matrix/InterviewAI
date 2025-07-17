@@ -28,7 +28,7 @@ const Navbar: React.FC = () => {
       <div className="container mx-auto px-2 md:px-4 flex justify-between items-center">
         <Link to="/" className="flex items-center space-x-3">
           <Logo />
-          <span className="text-lg font-bold text-blue-600">InterviewAI</span>
+          <span className="text-lg font-bold text-blue-600">BrOne.ai</span>
         </Link>
         
         {/* Desktop Navigation */}

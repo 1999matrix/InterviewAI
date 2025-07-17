@@ -8,7 +8,7 @@ declare global {
   }
 }
 
-// const serverUrl = "http://192.168.143.219:7777/api/v1";
+//const serverUrl = "http://192.168.143.219:7777/api/v1";
 const serverUrl = import.meta.env.VITE_APP_API_BASE;
 
 
