@@ -1,4 +1,4 @@
-import mysql.connector
+import psycopg2
 import pandas as pd
 from dotenv import load_dotenv
 from src.utils import create_database
@@ -9,25 +9,26 @@ load_dotenv()
 
 def connect_to_database():
     """
-    Establishes a connection to the MySQL database using environment variables.
+    Establishes a connection to the PostgreSQL database using environment variables.
     Returns the connection object.
     """
     try:
-        connection = mysql.connector.connect(
-            host=os.getenv("mysql_database_host"),
-            user=os.getenv("mysql_database_user"),
-            password=os.getenv("mysql_database_password"),
-            database=os.getenv("database_uq")
+        connection = psycopg2.connect(
+            host=os.getenv("postgres_database_host"),
+            user=os.getenv("postgres_database_user"),
+            password=os.getenv("postgres_database_password"),
+            database=os.getenv("database_uq"),
+            port=os.getenv("postgres_database_port")
         )
         return connection
-    except mysql.connector.Error as error:
-        print(f"Error connecting to MySQL: {error}")
+    except psycopg2.Error as error:
+        print(f"Error connecting to PostgreSQL: {error}")
         return None
 
 
 def python_table_creation(table_name):
     """
-    Creates a table in the MySQL database if it does not exist.
+    Creates a table in the PostgreSQL database if it does not exist.
     """
     connection = connect_to_database()
     if connection is None:
@@ -37,7 +38,7 @@ def python_table_creation(table_name):
         cursor = connection.cursor()
         create_table_query = f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             question VARCHAR(255),
             Topic VARCHAR(255),
             level VARCHAR(255)
@@ -46,7 +47,7 @@ def python_table_creation(table_name):
         cursor.execute(create_table_query)
         connection.commit()
         print(f"Table '{table_name}' created successfully.")
-    except mysql.connector.Error as error:
+    except psycopg2.Error as error:
         print(f"Error creating table '{table_name}': {error}")
     finally:
         cursor.close()
@@ -57,7 +58,7 @@ def python_table_creation(table_name):
 
 def insert_questions_from_excel(question_file_path, table_name):
     """
-    Reads questions, topics, and levels from an Excel file and inserts them into the specified MySQL table.
+    Reads questions, topics, and levels from an Excel file and inserts them into the specified PostgreSQL table.
     """
     try:
         # Load data from Excel file
@@ -92,7 +93,7 @@ def insert_questions_from_excel(question_file_path, table_name):
 
             connection.commit()
             print("All records inserted successfully.")
-        except mysql.connector.Error as error:
+        except psycopg2.Error as error:
             print(f"Error inserting records: {error}")
         finally:
             cursor.close()

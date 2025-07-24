@@ -1,5 +1,6 @@
 import time
-import mysql.connector
+import psycopg2
+from psycopg2.extras import DictCursor
 import os
 from src.utils import connect_to_db
 from dotenv import load_dotenv
@@ -18,7 +19,7 @@ class UserResultFetcherComp2:
         self.user_history_table = os.getenv("user_history_table")
 
     def refresh_connection(self):
-        if self.connection.is_connected():
+        if self.connection:
             self.connection.close()
         self.connection = connect_to_db()
 
@@ -51,9 +52,10 @@ class UserResultFetcherComp2:
             if time.time() - start_time > timeout_duration:
                 return {"error": "Timeout occurred while waiting for database consistency."}
 
+            cursor = None
             try:
                 self.refresh_connection()
-                cursor = self.connection.cursor(dictionary=True)
+                cursor = self.connection.cursor(cursor_factory=DictCursor)
                 query = f"SELECT question, response, result FROM {self.user_session_table_2} WHERE username = %s"
                 cursor.execute(query, (username,))
                 user_data = cursor.fetchone()
@@ -71,10 +73,10 @@ class UserResultFetcherComp2:
                 print(f"Length Mismatch: Questions({len(question_list)}), Responses({len(response_list)}), Results({len(result_list)})")
                 time.sleep(5)
 
-            except mysql.connector.Error as error:
+            except psycopg2.Error as error:
                 return {"error": f"Database error: {error}"}
             finally:
-                if self.connection.is_connected():
+                if cursor:
                     cursor.close()
 
         # Prepare the response data
@@ -93,12 +95,13 @@ class UserResultFetcherComp2:
         # Calculate score with error handling
         percentage = self.calculate_score(report_data)
 
+        cursor = None
         try:
             # Insert the result into user_history_table
             cursor = self.connection.cursor()
             insert_query = f"""
                 INSERT INTO {self.user_history_table} (record_date, username, report, percentage, component_type)
-                VALUES (NOW(), %s, %s, %s, %s)
+                VALUES (CURRENT_TIMESTAMP, %s, %s, %s, %s)
             """
             cursor.execute(insert_query, (username, report_data, percentage, "comp2"))
             self.connection.commit()
@@ -108,10 +111,10 @@ class UserResultFetcherComp2:
             cursor.execute(delete_query, (username,))
             self.connection.commit()
 
-        except mysql.connector.Error as error:
+        except psycopg2.Error as error:
             return {"error": f"Failed to insert into user_history_table: {error}"}
         finally:
-            if self.connection.is_connected():
+            if cursor:
                 cursor.close()
 
         return None

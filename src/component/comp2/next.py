@@ -1,6 +1,7 @@
-import mysql.connector
+import psycopg2
 from src.utils import connect_to_db, counter_question
 from src.component.comp2.response_checker import ResponseFetcherComp2
+from src.component.comp2.result import UserResultFetcherComp2
 import threading 
 from src.component.comp2.text_to_db import TextAppenderComp2
 import os
@@ -108,21 +109,43 @@ class QuestionManagerComp2(TextAppenderComp2):
                 # Return next regular question if available
                 if len(ques) > response_count:
                     next_qestion = ques[response_count]  # Get the next q_id based on response_count
-
                     # question = fetch_question(self.question_table_name,next_q_id)
                     return next_qestion
                 else:
-                    return None  # No more questions left for this user
+                    # No more questions left - trigger completion
+                    self.complete_test(username)
+                    return {"status": "completed", "message": "Test completed successfully"}
             else:
                 return None  # Username does not exist
-        except mysql.connector.Error as error:
-            print("Error while fetching data from MySQL:", error)
+        except psycopg2.Error as error:
+            print("Error while fetching data from PostgreSQL:", error)
             return None
         finally:
             # Close connection
             if connection:
                 cursor.close()
                 connection.close()
+    
+    def complete_test(self, username):
+        """
+        Complete the test by processing results and cleaning up
+        """
+        try:
+            # Use UserResultFetcherComp2 to process results and cleanup
+            result_fetcher = UserResultFetcherComp2()
+            result = result_fetcher.get_user_result(username)
+            
+            # The get_user_result method already handles:
+            # 1. Storing results in user_history_table
+            # 2. Cleaning up user_session_table_2
+            
+            if result and 'error' in result:
+                print(f"Error completing test for {username}: {result['error']}")
+            else:
+                print(f"Test completed successfully for {username}")
+                
+        except Exception as e:
+            print(f"Error in complete_test: {e}")
 
 
 # if __name__ == "__main__":

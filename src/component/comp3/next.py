@@ -1,5 +1,6 @@
 import os
-import mysql.connector
+import psycopg2
+from psycopg2.extras import DictCursor
 from dotenv import load_dotenv
 from src.model.groq import generate_interview_question, evaluate_interview_response
 from src.component.comp3.cv_to_db import UserCVHandler
@@ -27,15 +28,17 @@ class QuestionManagerComp3:
         """
         Get session data for the user
         """
-        connection = mysql.connector.connect(
-            host=os.getenv("mysql_database_host"),
-            user=os.getenv("mysql_database_user"),
-            password=os.getenv("mysql_database_password"),
-            database=os.getenv("database_uq")
+        connection = psycopg2.connect(
+            host=os.getenv("postgres_database_host"),
+            user=os.getenv("postgres_database_user"),
+            password=os.getenv("postgres_database_password"),
+            database=os.getenv("database_uq"),
+            port=os.getenv("postgres_database_port")
         )
 
+        cursor = None
         try:
-            cursor = connection.cursor(dictionary=True)
+            cursor = connection.cursor(cursor_factory=DictCursor)
             query = f"""
             SELECT * FROM {self.user_session_table} 
             WHERE username = %s
@@ -45,7 +48,8 @@ class QuestionManagerComp3:
             return result
 
         finally:
-            cursor.close()
+            if cursor:
+                cursor.close()
             connection.close()
 
     def store_user_history(self, username, questions, responses, feedbacks, scores):
@@ -74,13 +78,15 @@ class QuestionManagerComp3:
                 ]
             }
 
-            connection = mysql.connector.connect(
-                host=os.getenv("mysql_database_host"),
-                user=os.getenv("mysql_database_user"),
-                password=os.getenv("mysql_database_password"),
-                database=os.getenv("database_uq")
+            connection = psycopg2.connect(
+                host=os.getenv("postgres_database_host"),
+                user=os.getenv("postgres_database_user"),
+                password=os.getenv("postgres_database_password"),
+                database=os.getenv("database_uq"),
+                port=os.getenv("postgres_database_port")
             )
 
+            cursor = None
             try:
                 cursor = connection.cursor()
                 # Store in user_history table
@@ -99,7 +105,8 @@ class QuestionManagerComp3:
                 connection.commit()
 
             finally:
-                cursor.close()
+                if cursor:
+                    cursor.close()
                 connection.close()
 
         except Exception as e:
@@ -124,8 +131,8 @@ class QuestionManagerComp3:
                 raise Exception("No active session found for user")
 
             # Parse existing data
-            cv_content = session_data['CV']
-            job_description = session_data['JD']
+            cv_content = session_data['cv']
+            job_description = session_data['jd']
             role = session_data['role']
             experience = session_data['experience']
             response_count = session_data['response_count']
@@ -175,12 +182,14 @@ class QuestionManagerComp3:
                     self.store_user_history(username, questions, responses, feedbacks, scores)
                     
                     # Clean up session data
-                    connection = mysql.connector.connect(
-                        host=os.getenv("mysql_database_host"),
-                        user=os.getenv("mysql_database_user"),
-                        password=os.getenv("mysql_database_password"),
-                        database=os.getenv("database_uq")
+                    connection = psycopg2.connect(
+                        host=os.getenv("postgres_database_host"),
+                        user=os.getenv("postgres_database_user"),
+                        password=os.getenv("postgres_database_password"),
+                        database=os.getenv("database_uq"),
+                        port=os.getenv("postgres_database_port")
                     )
+                    cursor = None
                     try:
                         cursor = connection.cursor()
                         cleanup_query = f"""
@@ -190,7 +199,8 @@ class QuestionManagerComp3:
                         cursor.execute(cleanup_query, (username,))
                         connection.commit()
                     finally:
-                        cursor.close()
+                        if cursor:
+                            cursor.close()
                         connection.close()
 
                     return {
@@ -212,13 +222,15 @@ class QuestionManagerComp3:
             questions.append(next_question)
 
             # Update the session in database
-            connection = mysql.connector.connect(
-                host=os.getenv("mysql_database_host"),
-                user=os.getenv("mysql_database_user"),
-                password=os.getenv("mysql_database_password"),
-                database=os.getenv("database_uq")
+            connection = psycopg2.connect(
+                host=os.getenv("postgres_database_host"),
+                user=os.getenv("postgres_database_user"),
+                password=os.getenv("postgres_database_password"),
+                database=os.getenv("database_uq"),
+                port=os.getenv("postgres_database_port")
             )
 
+            cursor = None
             try:
                 cursor = connection.cursor()
 
@@ -256,7 +268,8 @@ class QuestionManagerComp3:
                 }
 
             finally:
-                cursor.close()
+                if cursor:
+                    cursor.close()
                 connection.close()
 
         except Exception as e:

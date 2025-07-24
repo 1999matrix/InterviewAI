@@ -14,20 +14,25 @@ class TextAppender:
         if db_connection:
             cursor = db_connection.cursor()
             print("going to send data in table2")
-            # Construct the SQL query
+            # Construct the SQL query using PostgreSQL syntax
             sql_query = f"""
                         UPDATE {self.user_session_table_1} 
                         SET 
-                            response = CONCAT_WS(',', IF(response='', NULL, response), %s),
-                            response_count = IF(response_count IS NULL, 1, response_count + 1)
+                            response = CASE 
+                                WHEN response = '' OR response IS NULL THEN %s
+                                ELSE response || ',' || %s
+                            END,
+                            response_count = CASE 
+                                WHEN response_count IS NULL THEN 1 
+                                ELSE response_count + 1 
+                            END
                         WHERE username = %s
                         """
-            # Note: CONCAT_WS should be used to add a comma between existing text and new text
             
             print("query is ready")
             try:
                 # Execute the SQL query
-                cursor.execute(sql_query, (text, username))
+                cursor.execute(sql_query, (text, text, username))
                 print("cursor is ready")
                 # Commit the changes
                 db_connection.commit()

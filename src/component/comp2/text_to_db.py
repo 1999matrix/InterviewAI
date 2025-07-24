@@ -17,12 +17,18 @@ class TextAppenderComp2:
         if db_connection:
             cursor = db_connection.cursor()
 
-            # Construct the SQL query
+            # Construct the SQL query using PostgreSQL syntax
             sql_query = f"""
                 UPDATE {self.user_session_table_2} 
                 SET 
-                    response = IF(response IS NULL OR response = '', %s, CONCAT(response, ',', %s)),
-                    response_count = IF(response_count IS NULL, 1, response_count + 1)
+                    response = CASE 
+                        WHEN response IS NULL OR response = '' THEN %s
+                        ELSE response || ',' || %s
+                    END,
+                    response_count = CASE 
+                        WHEN response_count IS NULL THEN 1 
+                        ELSE response_count + 1 
+                    END
                 WHERE username = %s
             """
             # print("SQL Query is ready")

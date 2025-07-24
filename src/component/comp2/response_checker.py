@@ -1,4 +1,4 @@
-import mysql.connector
+
 import requests
 import json
 from src.utils import connect_to_db
@@ -51,10 +51,10 @@ class ResponseFetcherComp2:
                         print("Invalid response count")
                 else:
                     print(f"User not found in table 2   -  {username}")
-        except mysql.connector.Error as error:
+        except psycopg2.Error as error:
             print("Error:", error)
         finally:
-            if connection and connection.is_connected():
+            if connection:
                 cursor.close()
                 question_table_cursor.close()
                 connection.close()

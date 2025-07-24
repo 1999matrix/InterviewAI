@@ -1,5 +1,5 @@
 import time
-import mysql.connector
+import psycopg2
 import os
 from src.utils import connect_to_db
 from src.utils import fetch_question
@@ -19,7 +19,7 @@ class UserResultFetcherComp1:
         self.question_table_name = os.getenv("question_table_name")
         self.user_history_table = os.getenv("user_history_table")
     def refresh_connection(self):
-        if self.connection.is_connected():
+        if self.connection:
             self.connection.close()
         self.connection = connect_to_db()
 
@@ -58,11 +58,11 @@ class UserResultFetcherComp1:
                 print(f"Length Mismatch: Questions({len(question_list)}), Responses({len(response_list)}), Results({len(result_list)})")
                 time.sleep(5)
 
-            except mysql.connector.Error as error:
+            except psycopg2.Error as error:
                 return {"error": f"Database error: {error}"}
 
             finally:
-                if self.connection.is_connected():
+                if self.connection:
                     cursor.close()
 
         response_result_list = [
@@ -81,21 +81,21 @@ class UserResultFetcherComp1:
             # Insert the result into user_history_table
             cursor = self.connection.cursor()
             insert_query = f"""
-                INSERT INTO {self.user_history_table} (record_date, username, report, percentage)
-                VALUES (NOW(), %s, %s, %s)
+                INSERT INTO {self.user_history_table} (record_date, username, report, percentage, component_type)
+                VALUES (CURRENT_TIMESTAMP, %s, %s, %s, %s)
             """
-            cursor.execute(insert_query, (username, report_data, percentage))  # Percentage is left as NULL for now
+            cursor.execute(insert_query, (username, report_data, percentage, "comp1"))
             self.connection.commit()
 
-            # Delete the user record from user_session_table_2
+            # Delete the user record from user_session_table_1
             delete_query = f"DELETE FROM {self.user_session_table_1} WHERE username = %s"
             cursor.execute(delete_query, (username,))
             self.connection.commit()
 
-        except mysql.connector.Error as error:
+        except psycopg2.Error as error:
             return {"error": f"Failed to insert into user_history_table: {error}"}
         finally:
-            if self.connection.is_connected():
+            if self.connection:
                 cursor.close()
 
         return response_result_list

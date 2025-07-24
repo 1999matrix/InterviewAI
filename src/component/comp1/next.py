@@ -1,4 +1,4 @@
-import mysql.connector
+import psycopg2
 from src.utils import connect_to_db
 from src.component.comp1.response_checker import ResponseFetcherComp1
 import threading 

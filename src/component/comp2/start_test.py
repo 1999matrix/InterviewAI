@@ -83,7 +83,7 @@ class QuestionFetcherComp2:
             raise ValueError(f"An error occurred while fetching CV: {e}")
         finally:
             # Ensure connection is closed
-            if connection and connection.is_connected():
+            if connection:
                 connection.close()
 
     def insert_questions_into_db(self, questions):
@@ -130,7 +130,7 @@ class QuestionFetcherComp2:
             raise ValueError(f"An error occurred while inserting questions: {e}")
         finally:
             # Close the cursor and connection
-            if connection and connection.is_connected():
+            if connection:
                 cursor.close()
                 connection.close()
 
