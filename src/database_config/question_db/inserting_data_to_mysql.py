@@ -111,7 +111,7 @@ if __name__ == "__main__":
     create_database(database_name)
 
     # Define the path to the Excel file and the target table name
-    question_file_path = "C:/Users/bhupe/Goal_77/src/database_config/question_db/questions.xlsx"
+    question_file_path = "C:/Users/Shashwat Dwivedi/Desktop/bhopu_backend/Goal_77/src/database_config/question_db/questions.xlsx"
     question_table_name = os.getenv("question_table_name")
 
     # Create table and insert questions
