@@ -249,12 +249,14 @@ async def handle_start_test_comp2(request: StartTestComp2Request):
         if audio_bytes is None:
             raise HTTPException(status_code=500, detail="Failed to generate audio")
 
-        return StreamingResponse(
-            io.BytesIO(audio_bytes),
-            media_type="audio/mpeg",
-            headers={
-                "Content-Disposition": "attachment; filename=question.mp3",
-                "X-Question-Text": str(first_question)
+        # Return JSON with question text in body and audio as base64
+        audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+        
+        return JSONResponse(
+            content={
+                "question_text": str(first_question),
+                "audio_data": audio_base64,
+                "audio_type": "audio/mpeg"
             }
         )
 
@@ -287,12 +289,14 @@ async def get_next_question_comp2(username: str, text: Optional[str] = None):
         if audio_bytes is None:
             raise HTTPException(status_code=500, detail="Failed to generate audio")
 
-        return StreamingResponse(
-            io.BytesIO(audio_bytes),
-            media_type="audio/mpeg",
-            headers={
-                "Content-Disposition": "attachment; filename=question.mp3",
-                "X-Question-Text": str(next_question_id)
+        # Return JSON with question text in body and audio as base64
+        audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+        
+        return JSONResponse(
+            content={
+                "question_text": str(next_question_id),
+                "audio_data": audio_base64,
+                "audio_type": "audio/mpeg"
             }
         )
     else:
@@ -373,12 +377,14 @@ async def handle_start_test_comp3(
                 f"Successfully started test for user: {request.username}"
             )
 
-            return StreamingResponse(
-                io.BytesIO(audio_bytes),
-                media_type="audio/mpeg",
-                headers={
-                    "Content-Disposition": "attachment; filename=question.mp3",
-                    "X-Question-Text": str(result['first_question'])
+            # Return JSON with question text in body and audio as base64
+            audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+            
+            return JSONResponse(
+                content={
+                    "question_text": str(result['first_question']),
+                    "audio_data": audio_base64,
+                    "audio_type": "audio/mpeg"
                 }
             )
 
@@ -440,12 +446,14 @@ async def get_next_question_comp3(
                 f"Successfully processed response for user: {request.username}"
             )
 
-            return StreamingResponse(
-                io.BytesIO(audio_bytes),
-                media_type="audio/mpeg",
-                headers={
-                    "Content-Disposition": "attachment; filename=question.mp3",
-                    "X-Question-Text": str(result['next_question'])
+            # Return JSON with question text in body and audio as base64
+            audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+            
+            return JSONResponse(
+                content={
+                    "question_text": str(result['next_question']),
+                    "audio_data": audio_base64,
+                    "audio_type": "audio/mpeg"
                 }
             )
 
