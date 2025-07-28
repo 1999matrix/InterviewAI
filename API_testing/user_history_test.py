@@ -20,6 +20,11 @@ def test_get_user_history():
             data = response.json()
             print(f"Response: {json.dumps(data, indent=2)}")
             print(f"Total Records: {data.get('total_records', 0)}")
+            
+            # Show session IDs summary
+            if data.get('data'):
+                session_ids = [item['session_id'] for item in data['data']]
+                print(f"Session IDs: {session_ids}")
         else:
             print(f"Error: {response.text}")
             
@@ -46,6 +51,11 @@ def test_get_user_history_by_component():
             data = response.json()
             print(f"Response: {json.dumps(data, indent=2)}")
             print(f"Component: {component_type}, Records: {data.get('total_records', 0)}")
+            
+            # Show session IDs summary
+            if data.get('data'):
+                session_ids = [item['session_id'] for item in data['data']]
+                print(f"Session IDs: {session_ids}")
         else:
             print(f"Error: {response.text}")
             
@@ -69,7 +79,7 @@ def test_get_latest_user_result():
             print(f"Response: {json.dumps(data, indent=2)}")
             if data.get('data'):
                 latest = data['data']
-                print(f"Latest Result: {latest['component_type']} - {latest['percentage']}% on {latest['record_date']}")
+                print(f"Latest Result: Session {latest['session_id']} - {latest['component_type']} - {latest['percentage']}% on {latest['record_date']}")
         else:
             print(f"Error: {response.text}")
             

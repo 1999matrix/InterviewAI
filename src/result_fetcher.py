@@ -25,7 +25,7 @@ class UserHistoryFetcher:
             
             # Query to fetch required fields based on username
             query = f"""
-                SELECT component_type, record_date, percentage, report 
+                SELECT session_id, component_type, record_date, percentage, report 
                 FROM {self.user_history_table} 
                 WHERE username = %s 
                 ORDER BY record_date DESC
@@ -44,6 +44,7 @@ class UserHistoryFetcher:
             history_data = []
             for row in results:
                 history_data.append({
+                    "session_id": row['session_id'],
                     "component_type": row['component_type'],
                     "record_date": row['record_date'].isoformat() if row['record_date'] else None,
                     "percentage": float(row['percentage']) if row['percentage'] else None,
@@ -79,7 +80,7 @@ class UserHistoryFetcher:
             cursor = connection.cursor(cursor_factory=DictCursor)
             
             query = f"""
-                SELECT component_type, record_date, percentage, report 
+                SELECT session_id, component_type, record_date, percentage, report 
                 FROM {self.user_history_table} 
                 WHERE username = %s AND component_type = %s 
                 ORDER BY record_date DESC
@@ -97,6 +98,7 @@ class UserHistoryFetcher:
             history_data = []
             for row in results:
                 history_data.append({
+                    "session_id": row['session_id'],
                     "component_type": row['component_type'],
                     "record_date": row['record_date'].isoformat() if row['record_date'] else None,
                     "percentage": float(row['percentage']) if row['percentage'] else None,
@@ -133,7 +135,7 @@ class UserHistoryFetcher:
             cursor = connection.cursor(cursor_factory=DictCursor)
             
             query = f"""
-                SELECT component_type, record_date, percentage, report 
+                SELECT session_id, component_type, record_date, percentage, report 
                 FROM {self.user_history_table} 
                 WHERE username = %s 
                 ORDER BY record_date DESC 
@@ -150,6 +152,7 @@ class UserHistoryFetcher:
                 }
             
             latest_result = {
+                "session_id": result['session_id'],
                 "component_type": result['component_type'],
                 "record_date": result['record_date'].isoformat() if result['record_date'] else None,
                 "percentage": float(result['percentage']) if result['percentage'] else None,
