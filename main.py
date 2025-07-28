@@ -16,6 +16,7 @@ from src.component.comp2.cv_to_db import UserCVHandler
 from src.component.comp3.start_test import QuestionFetcherComp3
 from src.component.comp3.next import QuestionManagerComp3
 from src.component.comp3.websocket_interview import websocket_manager
+from src.result_fetcher import UserHistoryFetcher
 from dotenv import load_dotenv
 from src.utils import create_database
 from src.database_config.user_cv.user_cv_table import create_user_cv_table
@@ -252,12 +253,14 @@ async def handle_start_test_comp2(request: StartTestComp2Request):
         if audio_bytes is None:
             raise HTTPException(status_code=500, detail="Failed to generate audio")
 
-        return StreamingResponse(
-            io.BytesIO(audio_bytes),
-            media_type="audio/mpeg",
-            headers={
-                "Content-Disposition": "attachment; filename=question.mp3",
-                "X-Question-Text": str(first_question)
+        # Return JSON with question text in body and audio as base64
+        audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+        
+        return JSONResponse(
+            content={
+                "question_text": str(first_question),
+                "audio_data": audio_base64,
+                "audio_type": "audio/mpeg"
             }
         )
 
@@ -290,12 +293,14 @@ async def get_next_question_comp2(username: str, text: Optional[str] = None):
         if audio_bytes is None:
             raise HTTPException(status_code=500, detail="Failed to generate audio")
 
-        return StreamingResponse(
-            io.BytesIO(audio_bytes),
-            media_type="audio/mpeg",
-            headers={
-                "Content-Disposition": "attachment; filename=question.mp3",
-                "X-Question-Text": str(next_question_id)
+        # Return JSON with question text in body and audio as base64
+        audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+        
+        return JSONResponse(
+            content={
+                "question_text": str(next_question_id),
+                "audio_data": audio_base64,
+                "audio_type": "audio/mpeg"
             }
         )
     else:
@@ -376,12 +381,14 @@ async def handle_start_test_comp3(
                 f"Successfully started test for user: {request.username}"
             )
 
-            return StreamingResponse(
-                io.BytesIO(audio_bytes),
-                media_type="audio/mpeg",
-                headers={
-                    "Content-Disposition": "attachment; filename=question.mp3",
-                    "X-Question-Text": str(result['first_question'])
+            # Return JSON with question text in body and audio as base64
+            audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+            
+            return JSONResponse(
+                content={
+                    "question_text": str(result['first_question']),
+                    "audio_data": audio_base64,
+                    "audio_type": "audio/mpeg"
                 }
             )
 
@@ -443,12 +450,14 @@ async def get_next_question_comp3(
                 f"Successfully processed response for user: {request.username}"
             )
 
-            return StreamingResponse(
-                io.BytesIO(audio_bytes),
-                media_type="audio/mpeg",
-                headers={
-                    "Content-Disposition": "attachment; filename=question.mp3",
-                    "X-Question-Text": str(result['next_question'])
+            # Return JSON with question text in body and audio as base64
+            audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+            
+            return JSONResponse(
+                content={
+                    "question_text": str(result['next_question']),
+                    "audio_data": audio_base64,
+                    "audio_type": "audio/mpeg"
                 }
             )
 
@@ -460,6 +469,76 @@ async def get_next_question_comp3(
         raise
     except Exception as e:
         logger.error(f"Unexpected error in get_next_question_comp3: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# User History API Endpoints
+@app.get('/api/v1/get_user_history')
+async def get_user_history_api(username: str):
+    """
+    Fetch all user history records based on username
+    Returns: component_type, record_date, percentage, and report
+    """
+    if not username:
+        raise HTTPException(status_code=400, detail="Username parameter is missing")
+    
+    try:
+        fetcher = UserHistoryFetcher()
+        result = fetcher.get_user_history(username)
+        
+        if "error" in result:
+            raise HTTPException(status_code=500, detail=result["error"])
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get('/api/v1/get_user_history_by_component')
+async def get_user_history_by_component_api(username: str, component_type: str):
+    """
+    Fetch user history records based on username and component type
+    """
+    if not username:
+        raise HTTPException(status_code=400, detail="Username parameter is missing")
+    if not component_type:
+        raise HTTPException(status_code=400, detail="Component type parameter is missing")
+    
+    try:
+        fetcher = UserHistoryFetcher()
+        result = fetcher.get_user_history_by_component(username, component_type)
+        
+        if "error" in result:
+            raise HTTPException(status_code=500, detail=result["error"])
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get('/api/v1/get_latest_user_result')
+async def get_latest_user_result_api(username: str):
+    """
+    Fetch the latest/most recent result for a user
+    """
+    if not username:
+        raise HTTPException(status_code=400, detail="Username parameter is missing")
+    
+    try:
+        fetcher = UserHistoryFetcher()
+        result = fetcher.get_latest_user_result(username)
+        
+        if "error" in result:
+            raise HTTPException(status_code=500, detail=result["error"])
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 # WebSocket endpoint for real-time interview communication (comp3)
