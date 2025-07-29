@@ -19,7 +19,9 @@
     "keycloak-js": "^26.2.0",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
+    "react-calendar": "^6.0.0",
     "react-calendar-heatmap": "^1.10.0",
+    "react-circular-progressbar": "^2.2.0",
     "react-dom": "^18.3.1",
     "react-draggable": "^4.4.6",
     "react-lottie": "^1.2.10",
@@ -27,6 +29,7 @@
     "react-router-dom": "^6.22.1",
     "react-speech-kit": "^3.0.1",
     "react-speech-recognition": "^4.0.1",
+    "react-time-picker": "^7.0.0",
     "react-tooltip": "^5.26.0",
     "recharts": "^2.12.1"
   },

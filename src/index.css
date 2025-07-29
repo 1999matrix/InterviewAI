@@ -39,7 +39,7 @@
   }
   
   .card-interactive {
-    @apply card hover:shadow-xl hover:scale-[1.02];
+    @apply card hover:shadow-xl hover:scale-[1.01];
   }
 }
 
@@ -101,4 +101,15 @@ body {
 /* Dark mode transitions */
 .theme-transition {
   @apply transition-colors duration-200;
+}
+
+.react-time-picker__wrapper {
+  padding: 8px;
+  border-radius: 10px;
+}
+
+.react-time-picker__inputGroup__amPm {
+  text-transform: uppercase;
+  margin-left: 5px;
+  margin-right: 5px;
 }

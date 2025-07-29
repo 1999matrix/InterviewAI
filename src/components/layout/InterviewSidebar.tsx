@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
+import {
   UserCircle, 
   Calendar, 
   BookOpen, 
@@ -21,6 +21,7 @@ const InterviewSidebar: React.FC<InterviewSidebarProps> = ({ isOpen, toggleSideb
   const location = useLocation();
   
   const sidebarLinks = [
+    { icon: <Users />, label: 'Dashboard', path: '/interview/home' },
     { icon: <UserCircle size={20} />, label: 'Profile', path: '/interview/profile' },
     { icon: <Calendar size={20} />, label: 'Schedule Mock Interview', path: '/interview/schedule' },
     { icon: <Code size={20} />, label: 'Coding Test', path: '/interview/coding-test' },
@@ -38,7 +39,7 @@ const InterviewSidebar: React.FC<InterviewSidebarProps> = ({ isOpen, toggleSideb
   // }`;
   
   return (
-    <div className="bg-gradient-to-b from-blue-200 to-rose-300 rounded-e-xl">
+    <div className="bg-gradient-to-b from-blue-200 to-rose-300 rounded-e-xl w-80">
       <div className="h-full flex flex-col overflow-y-auto">
         <div className="p-4">
           <div className="flex flex-col gap-2">

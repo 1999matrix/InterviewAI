@@ -24,7 +24,8 @@ import ResumeAnalyzerPage from '../pages/resume/ResumeAnalyzerPage';
 import CodingTestPage from '../pages/interview/CodingTestPage';
 import AptitudeTestPage from '../pages/interview/AptitudeTestPage';
 import KeycloakTestPage from '../pages/KeycloakTestPage';
-// import Scheduler from '../pages/user/Scheduler';
+import Scheduler from '../pages/user/Scheduler';
+import Profile from '../pages/user/Profile';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -57,9 +58,14 @@ const AppRoutes: React.FC = () => {
             <CreateSessionPage />
           // </ProtectedRoute>
         } />
-        <Route path="/interview/profile" element={
+        <Route path="/interview/home" element={
           // <ProtectedRoute>
             <ProfilePage />
+          // </ProtectedRoute>
+        } />
+        <Route path="/interview/profile" element={
+          // <ProtectedRoute>
+            <Profile />
           // </ProtectedRoute>
         } />
         <Route path="/interview/session" element={
