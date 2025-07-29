@@ -465,7 +465,7 @@
 // //         // Extract text from PDF using react-pdftotext
 // //         const text = await pdfToText(file);
 
-// //         // Send parsed text as a JSON string in the cv_text field
+// //         // Send parsed text as a JSON string in the cv_text field   
 // //         let atsAnalysisObj = null;
 // //         let breakdownText = '';
 // //         try {

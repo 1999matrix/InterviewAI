@@ -75,18 +75,18 @@ const AptitudeTestPage: React.FC = () => {
   // Initialize question states when questions are loaded
   useEffect(() => {
     if (questions.length > 0) {
-      const initialStates: Record<number, QuestionState> = {};
-      questions.forEach((q) => {
-        initialStates[q.id] = {
-          status: 'not-visited',
-          answer: null,
-          timeSpent: 0
-        };
-      });
-      setQuestionStates(initialStates);
+    const initialStates: Record<number, QuestionState> = {};
+    questions.forEach((q) => {
+      initialStates[q.id] = {
+        status: 'not-visited',
+        answer: null,
+        timeSpent: 0
+      };
+    });
+    setQuestionStates(initialStates);
     }
   }, [questions]);
-
+  
   // Timer management
   useEffect(() => {
     if (testStarted && !testCompleted && timeRemaining > 0) {
@@ -103,14 +103,14 @@ const AptitudeTestPage: React.FC = () => {
         });
       }, 1000);
     }
-
+    
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
     };
   }, [testStarted, testCompleted, timeRemaining]);
-
+  
   // Fullscreen and tab switch monitoring
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -119,14 +119,14 @@ const AptitudeTestPage: React.FC = () => {
         setSuspiciousActivity(prev => [...prev, `Tab switched at ${new Date().toLocaleTimeString()}`]);
       }
     };
-
+    
     const handleFullscreenChange = () => {
       setIsFullScreen(!!document.fullscreenElement);
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+      document.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-
+    
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
@@ -166,9 +166,9 @@ const AptitudeTestPage: React.FC = () => {
   // Get current question
   const getCurrentQuestion = () => questions[currentQuestionIndex];
   const getCurrentQuestionState = () => questionStates[getCurrentQuestion()?.id] || {
-    status: 'not-visited',
-    answer: null,
-    timeSpent: 0
+      status: 'not-visited',
+      answer: null,
+      timeSpent: 0
   };
 
   // Answer handling
@@ -215,7 +215,7 @@ const AptitudeTestPage: React.FC = () => {
     if (!currentQuestion) return;
 
     try {
-      const currentState = getCurrentQuestionState();
+    const currentState = getCurrentQuestionState();
       const newStatus = currentState.status === 'marked-for-review' ? 'not-answered' : 
                        currentState.status === 'answered-and-marked' ? 'answered' :
                        currentState.answer ? 'answered-and-marked' : 'marked-for-review';
@@ -230,7 +230,7 @@ const AptitudeTestPage: React.FC = () => {
         ...prev,
         [currentQuestion.id]: {
           ...prev[currentQuestion.id],
-          status: newStatus
+      status: newStatus
         }
       }));
     } catch (error) {
@@ -242,7 +242,7 @@ const AptitudeTestPage: React.FC = () => {
   const goToQuestion = (index: number) => {
     if (index >= 0 && index < questions.length) {
       // Update time spent on current question
-      const currentQuestion = getCurrentQuestion();
+    const currentQuestion = getCurrentQuestion();
       if (currentQuestion) {
         const timeSpent = Math.floor((Date.now() - questionStartTimeRef.current) / 1000);
         setQuestionStates(prev => ({
@@ -282,12 +282,12 @@ const AptitudeTestPage: React.FC = () => {
       ...prev,
       [currentQuestion.id]: {
         ...prev[currentQuestion.id],
-        answer: null,
+      answer: null,
         status: 'not-answered'
       }
     }));
   };
-
+  
   const saveAndNext = async () => {
     const currentQuestion = getCurrentQuestion();
     const currentState = getCurrentQuestionState();
@@ -297,7 +297,7 @@ const AptitudeTestPage: React.FC = () => {
     }
     goToNextQuestion();
   };
-
+  
   // Auto-submit when time expires
   const handleAutoSubmit = async () => {
     try {
@@ -322,7 +322,7 @@ const AptitudeTestPage: React.FC = () => {
         setTestCompleted(true);
         // Navigate to results page with results data
         navigate('/test-results', { 
-          state: { 
+      state: {
             results: response.data,
             testType: 'aptitude'
           } 
@@ -382,7 +382,7 @@ const AptitudeTestPage: React.FC = () => {
               <h1 className="text-3xl font-bold text-gray-900 mb-4">Aptitude Test Instructions</h1>
               <p className="text-lg text-gray-600">Please read the following instructions carefully before starting the test.</p>
             </div>
-
+            
             <div className="space-y-6 mb-8">
               <div className="bg-blue-50 rounded-lg p-6">
                 <h2 className="text-xl font-semibold text-blue-900 mb-4 flex items-center">
@@ -397,7 +397,7 @@ const AptitudeTestPage: React.FC = () => {
                   <li>Negative marks: <strong>-0.25</strong> for incorrect answers</li>
                 </ul>
               </div>
-
+              
               <div className="bg-green-50 rounded-lg p-6">
                 <h2 className="text-xl font-semibold text-green-900 mb-4 flex items-center">
                   <CheckCircle className="w-6 h-6 mr-2" />
@@ -411,7 +411,7 @@ const AptitudeTestPage: React.FC = () => {
                   <li>Time warnings at 5 minutes remaining</li>
                 </ul>
               </div>
-
+              
               <div className="bg-red-50 rounded-lg p-6">
                 <h2 className="text-xl font-semibold text-red-900 mb-4 flex items-center">
                   <AlertTriangle className="w-6 h-6 mr-2" />
@@ -425,8 +425,8 @@ const AptitudeTestPage: React.FC = () => {
                   <li>Ensure stable internet connection</li>
                 </ul>
               </div>
-            </div>
-
+              </div>
+              
             <div className="flex justify-center space-x-4">
               <Button
                 onClick={() => navigate('/dashboard')}
@@ -450,13 +450,13 @@ const AptitudeTestPage: React.FC = () => {
       </div>
     );
   }
-
+  
   // Render test interface
   if (testStarted && !testCompleted) {
     const currentQuestion = getCurrentQuestion();
     const currentState = getCurrentQuestionState();
 
-    return (
+  return (
       <div className="min-h-screen bg-gray-100">
         {/* Error Toast */}
         {error && (
@@ -474,20 +474,20 @@ const AptitudeTestPage: React.FC = () => {
               <div className="flex items-center text-orange-600 mb-4">
                 <AlertTriangle className="w-8 h-8 mr-3" />
                 <h3 className="text-lg font-semibold">Time Warning</h3>
-              </div>
+            </div>
               <p className="text-gray-700 mb-4">
                 Only 5 minutes remaining! Please review your answers and submit soon.
               </p>
               <Button onClick={() => setShowTimeWarning(false)} className="w-full">
                 Continue Test
-              </Button>
-            </div>
+            </Button>
           </div>
+        </div>
         )}
-
+      
         {/* Submission Confirmation Modal */}
         {showSubmissionDialog && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Submit Test?
@@ -502,12 +502,12 @@ const AptitudeTestPage: React.FC = () => {
                 <p className="text-sm text-red-600">
                   <strong>Not Attempted:</strong> {statusSummary.notVisited + statusSummary.notAnswered}
                 </p>
-              </div>
-              <p className="text-gray-700 mb-4">
+            </div>
+            <p className="text-gray-700 mb-4">
                 Are you sure you want to submit your test? This action cannot be undone.
-              </p>
+            </p>
               <div className="flex space-x-3">
-                <Button
+            <Button 
                   onClick={() => setShowSubmissionDialog(false)}
                   variant="outline"
                   className="flex-1"
@@ -520,32 +520,32 @@ const AptitudeTestPage: React.FC = () => {
                   className="flex-1"
                 >
                   {isEndingTest ? 'Submitting...' : 'Submit Test'}
-                </Button>
+            </Button>
               </div>
-            </div>
           </div>
-        )}
-
+        </div>
+      )}
+      
         {/* Main Test Interface */}
         <div className="flex h-screen">
           {/* Question Palette Sidebar */}
-          {showQuestionPalette && (
+        {showQuestionPalette && (
             <div className="w-80 bg-white shadow-lg overflow-y-auto">
               <div className="p-4 border-b bg-gray-50">
                 <h2 className="font-semibold text-gray-900 mb-2">Question Palette</h2>
                 <div className="grid grid-cols-5 gap-2">
                   {questions.map((question, index) => (
-                    <button
-                      key={question.id}
-                      onClick={() => goToQuestion(index)}
+                  <button
+                    key={question.id}
+                    onClick={() => goToQuestion(index)}
                       className={`w-10 h-10 rounded text-sm font-medium border-2 transition-all ${
                         index === currentQuestionIndex 
                           ? 'border-blue-500 ring-2 ring-blue-200' 
                           : 'border-gray-300'
                       } ${getStatusColor(questionStates[question.id]?.status || 'not-visited')}`}
-                    >
-                      {index + 1}
-                    </button>
+                  >
+                    {index + 1}
+                  </button>
                   ))}
                 </div>
                 
@@ -582,28 +582,28 @@ const AptitudeTestPage: React.FC = () => {
                     <div>Not Visited: {statusSummary.notVisited}</div>
                   </div>
                 </div>
-              </div>
-              
-              {/* Tools */}
+            </div>
+            
+            {/* Tools */}
               <div className="p-4 space-y-3">
-                <Button
+              <Button
                   onClick={() => setShowCalculator(!showCalculator)}
-                  variant="outline"
-                  size="sm"
+                variant="outline"
+                size="sm"
                   className="w-full"
-                >
-                  <Calculator className="w-4 h-4 mr-2" />
-                  Calculator
-                </Button>
-                <Button
+              >
+                <Calculator className="w-4 h-4 mr-2" />
+                Calculator
+              </Button>
+              <Button
                   onClick={() => setShowScratchpad(!showScratchpad)}
-                  variant="outline"
-                  size="sm"
+                variant="outline"
+                size="sm"
                   className="w-full"
-                >
-                  <Edit3 className="w-4 h-4 mr-2" />
-                  Scratchpad
-                </Button>
+              >
+                <Edit3 className="w-4 h-4 mr-2" />
+                Scratchpad
+              </Button>
                 <Button
                   onClick={toggleFullScreen}
                   variant="outline"
@@ -613,10 +613,10 @@ const AptitudeTestPage: React.FC = () => {
                   <Maximize className="w-4 h-4 mr-2" />
                   {isFullScreen ? 'Exit' : 'Enter'} Fullscreen
                 </Button>
-              </div>
             </div>
-          )}
-
+          </div>
+        )}
+        
           {/* Main Content */}
           <div className="flex-1 flex flex-col">
             {/* Header */}
@@ -655,17 +655,17 @@ const AptitudeTestPage: React.FC = () => {
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-
+              
             {/* Question Content */}
             <div className="flex-1 overflow-y-auto">
               <div className="max-w-4xl mx-auto p-6">
                 {currentQuestion && (
                   <div className="bg-white rounded-lg shadow-sm p-6">
                     {/* Question Header */}
-                    <div className="mb-6">
+              <div className="mb-6">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-4">
                           <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
@@ -685,8 +685,8 @@ const AptitudeTestPage: React.FC = () => {
                         <div className="text-sm text-gray-600">
                           Marks: +{currentQuestion.marks} | -{currentQuestion.negativeMarks}
                         </div>
-                      </div>
-                      
+              </div>
+              
                       <h2 className="text-xl font-semibold text-gray-900 mb-4">
                         Q{currentQuestionIndex + 1}. {currentQuestion.question}
                       </h2>
@@ -697,13 +697,13 @@ const AptitudeTestPage: React.FC = () => {
                       {currentQuestion.options && currentQuestion.options.length > 0 ? (
                         <div className="space-y-3">
                           {currentQuestion.options.map((option) => (
-                            <label
+                    <label
                               key={option.key}
                               className="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                             >
                               {currentQuestion.type === 'MCQ' || currentQuestion.type === 'TRUE_FALSE' ? (
-                                <input
-                                  type="radio"
+                      <input
+                        type="radio"
                                   name={`question-${currentQuestion.id}`}
                                   value={option.key}
                                   checked={currentState.answer === option.key}
@@ -712,11 +712,11 @@ const AptitudeTestPage: React.FC = () => {
                                   disabled={isSubmittingAnswer}
                                 />
                               ) : (
-                                <input
-                                  type="checkbox"
+                      <input
+                        type="checkbox"
                                   value={option.key}
                                   checked={Array.isArray(currentState.answer) && currentState.answer.includes(option.key)}
-                                  onChange={(e) => {
+                        onChange={(e) => {
                                     const currentAnswers = Array.isArray(currentState.answer) ? currentState.answer : [];
                                     if (e.target.checked) {
                                       handleAnswerChange([...currentAnswers, option.key]);
@@ -730,59 +730,59 @@ const AptitudeTestPage: React.FC = () => {
                               )}
                               <span className="font-medium mr-3">{option.key}.</span>
                               <span>{option.text}</span>
-                            </label>
+                    </label>
                           ))}
                         </div>
                       ) : (
                         // Numerical Answer Type
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Enter your numerical answer:
-                          </label>
-                          <input
-                            type="number"
-                            step="any"
+                      Enter your numerical answer:
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
                             value={currentState.answer || ''}
-                            onChange={(e) => handleAnswerChange(parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleAnswerChange(parseFloat(e.target.value) || 0)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter numerical answer"
+                      placeholder="Enter numerical answer"
                             disabled={isSubmittingAnswer}
-                          />
-                        </div>
-                      )}
-                    </div>
-
+                    />
+                  </div>
+                )}
+            </div>
+            
                     {/* Action Buttons */}
                     <div className="flex justify-between items-center">
                       <div className="flex space-x-3">
-                        <Button
+                  <Button
                           onClick={clearAnswer}
-                          variant="outline"
+                    variant="outline"
                           size="sm"
                           disabled={!currentState.answer}
-                        >
+                  >
                           <RotateCcw className="w-4 h-4 mr-2" />
                           Clear
-                        </Button>
-                        <Button
+                  </Button>
+                  <Button
                           onClick={markForReview}
-                          variant="outline"
+                    variant="outline"
                           size="sm"
                           className={currentState.status.includes('marked') ? 'bg-purple-100 border-purple-300' : ''}
-                        >
+                  >
                           {currentState.status.includes('marked') ? 'Unmark' : 'Mark for Review'}
-                        </Button>
+                  </Button>
                       </div>
-
+                  
                       <div className="flex space-x-3">
-                        <Button
+                  <Button
                           onClick={goToPreviousQuestion}
-                          variant="outline"
+                    variant="outline"
                           disabled={currentQuestionIndex === 0}
-                        >
+                  >
                           <ArrowLeft className="w-4 h-4 mr-2" />
                           Previous
-                        </Button>
+                  </Button>
                         
                         {currentQuestionIndex === questions.length - 1 ? (
                           <Button
@@ -794,78 +794,78 @@ const AptitudeTestPage: React.FC = () => {
                           </Button>
                         ) : (
                           <>
-                            <Button
-                              onClick={saveAndNext}
+                  <Button
+                    onClick={saveAndNext}
                               disabled={!currentState.answer || isSubmittingAnswer}
-                            >
-                              <Save className="w-4 h-4 mr-2" />
-                              Save & Next
-                            </Button>
-                            <Button
-                              onClick={goToNextQuestion}
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Save & Next
+                  </Button>
+                  <Button
+                    onClick={goToNextQuestion}
                               variant="outline"
-                            >
-                              Next
-                              <ArrowRight className="w-4 h-4 ml-2" />
-                            </Button>
+                  >
+                    Next
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
                           </>
                         )}
-                      </div>
-                    </div>
+                </div>
+              </div>
                   </div>
                 )}
-              </div>
             </div>
           </div>
         </div>
-
+      </div>
+      
         {/* Calculator Modal */}
-        {showCalculator && (
+      {showCalculator && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-80">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Calculator</h3>
                 <button
-                  onClick={() => setShowCalculator(false)}
+              onClick={() => setShowCalculator(false)}
                   className="text-gray-500 hover:text-gray-700"
-                >
-                  ×
+            >
+              ×
                 </button>
-              </div>
+          </div>
               <div className="bg-gray-100 p-3 rounded mb-4">
                 <div className="text-right font-mono text-xl">{calculatorDisplay}</div>
-              </div>
+            </div>
               {/* Calculator buttons would go here */}
               <div className="text-sm text-gray-600">
                 Basic calculator functionality available
-              </div>
             </div>
           </div>
-        )}
-
+        </div>
+      )}
+      
         {/* Scratchpad Modal */}
-        {showScratchpad && (
+      {showScratchpad && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-96 h-96">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Scratchpad</h3>
                 <button
-                  onClick={() => setShowScratchpad(false)}
+              onClick={() => setShowScratchpad(false)}
                   className="text-gray-500 hover:text-gray-700"
-                >
-                  ×
+            >
+              ×
                 </button>
-              </div>
-              <textarea
-                value={scratchpadContent}
-                onChange={(e) => setScratchpadContent(e.target.value)}
-                className="w-full h-64 p-3 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Use this space for rough work..."
-              />
-            </div>
           </div>
-        )}
-      </div>
+          <textarea
+            value={scratchpadContent}
+            onChange={(e) => setScratchpadContent(e.target.value)}
+                className="w-full h-64 p-3 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Use this space for rough work..."
+          />
+            </div>
+        </div>
+      )}
+              </div>
     );
   }
 
@@ -875,7 +875,7 @@ const AptitudeTestPage: React.FC = () => {
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
         <p className="text-gray-600">Loading test...</p>
-      </div>
+            </div>
     </div>
   );
 };

@@ -9,8 +9,6 @@ import {
   VolumeX,
   Phone,
   PhoneOff,
-  Settings,
-  MoreHorizontal,
   User,
   Clock,
   Send,
@@ -79,6 +77,10 @@ const useAudioRecorder = (): AudioRecorderHook => {
   const startRecording = useCallback(async () => {
     try {
       setError(null);
+
+      if (window.isSecureContext === false) {
+        throw new Error("Microphone access is only allowed in secure contexts (HTTPS). Your app is currently not running in a secure context.");
+      }
       
       // Request high-quality audio stream with proper browser support detection
       let stream: MediaStream;
@@ -95,31 +97,16 @@ const useAudioRecorder = (): AudioRecorderHook => {
         // Modern browsers
         stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
       } else {
-        // Legacy browser support
-        const legacyGetUserMedia = (navigator as any).webkitGetUserMedia 
-                                 || (navigator as any).mozGetUserMedia 
-                                 || (navigator as any).getUserMedia;
-        
-        if (!legacyGetUserMedia) {
-          throw new Error('Your browser does not support audio recording. Please use a modern browser like Chrome, Firefox, or Safari.');
-        }
-        
-        // Wrap legacy getUserMedia in a Promise
-        stream = await new Promise<MediaStream>((resolve, reject) => {
-          legacyGetUserMedia.call(navigator, 
-            { audio: audioConstraints }, 
-            resolve, 
-            reject
-          );
-        });
+        throw new Error('Your browser does not support the MediaDevices API for audio recording. Please use a modern browser like Chrome, Firefox, or Safari.');
       }
 
       streamRef.current = stream;
       chunksRef.current = [];
 
       // Check MediaRecorder support and choose best format
+      // Check MediaRecorder support and choose best format
       if (!window.MediaRecorder) {
-        throw new Error('Your browser does not support audio recording. Please use a modern browser.');
+        throw new Error('Your browser does not support the MediaRecorder API. Please use a modern browser.');
       }
       
       let options: MediaRecorderOptions = {};
@@ -497,7 +484,7 @@ const InterviewPage: React.FC = () => {
         }
       } catch (error: any) {
         console.error('Failed to initialize interview:', error);
-        setError(error.message || 'Failed to start interview. Please try again.');
+        setError('Failed to start interview. Please check your connection and try again.');
       } finally {
         setIsInitializing(false);
       }
@@ -607,7 +594,7 @@ const InterviewPage: React.FC = () => {
           error.message === 'Interview completed') {
         setSessionActive(false);
       } else {
-        setError(error.message || 'Failed to submit answer. Please try again.');
+        setError('Failed to submit answer. Please check your connection and try again.');
       }
     } finally {
       setIsSubmittingAnswer(false);
@@ -632,7 +619,7 @@ const InterviewPage: React.FC = () => {
 
     setIsSubmittingAnswer(true);
     try {
-      await getUserResultComp2('api/v1/get_user_result_comp2', username);
+      await getUserResultComp2('get_user_result_comp2', username);
       setSessionActive(false);
       navigate('/dashboard', { 
         state: { message: 'Interview completed successfully!' }

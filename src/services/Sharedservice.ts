@@ -83,9 +83,9 @@ const startTestComp2 = (user: string, role: string, jobdesc: string, experience:
         cv: resume,
     };
     return axios.post(`${serverUrl}/start_test_comp2`, body, {
-        responseType: 'blob', // Important: Handle audio response
+        responseType: 'json', // Important: Handle audio response
         headers: {
-            'Accept': 'audio/mpeg, application/json'
+            'Accept': 'application/json'
         }
     });
 };
@@ -99,9 +99,9 @@ const startTestComp3 = (user: string, role: string, jobdesc: string, experience:
         cv: resume,
     };
     return axios.post(`${serverUrl}/start_test_comp3`, body, {
-        responseType: 'blob', // Important: Handle audio response
+        responseType: 'json', // Important: Handle audio response
         headers: {
-            'Accept': 'audio/mpeg, application/json'
+            'Accept': 'application/json'
         }
     });
 };
@@ -112,9 +112,9 @@ const getNextQuestionComp2 = (user: string, text: string) => {
             username: user,
             text: text,
         },
-        responseType: 'blob', // Important: Handle audio response
+        responseType: 'json', // Important: Handle audio response
         headers: {
-            'Accept': 'audio/mpeg, application/json'
+            'Accept': 'application/json'
         }
     }); 
 };
@@ -228,18 +228,52 @@ const handleServerAudioResponse = async (response: any): Promise<{ questionText:
     try {
         let questionText = '';
         let audioUrl = '';
-        
-        console.log('Full response:', response);
-        console.log('Response headers:', response.headers);
-        console.log('Response data type:', typeof response.data);
-        console.log('Response data instanceof Blob:', response.data instanceof Blob);
-        console.log('Response data size:', response.data?.size);
-        console.log('Response content-type:', response.headers['content-type']);
-        
-        // Check if response is JSON (completion case)
-        if (response.headers['content-type']?.includes('application/json')) {
-            // Handle JSON response - interview completed
-            try {
+
+        const contentType = response.headers['content-type'];
+
+        if (contentType?.includes('application/json')) {
+            const jsonResponse = response.data;
+
+            if (jsonResponse.status === 'completed') {
+                throw new Error('Interview completed');
+            }
+
+            questionText = jsonResponse.question_text;
+            if (jsonResponse.audio_data) {
+                const audioData = jsonResponse.audio_data;
+                const audioType = jsonResponse.audio_type || 'audio/mpeg';
+                const byteCharacters = atob(audioData);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: audioType });
+                audioUrl = URL.createObjectURL(blob);
+            }
+
+            if (!questionText) {
+                throw new Error('No question text received from server.');
+            }
+
+            return { questionText, audioUrl };
+
+        } else if (contentType?.includes('audio/mpeg')) {
+            // Legacy handling for audio stream with headers
+            const headers = response.headers;
+            questionText = headers['x-question-text'] || headers['X-Question-Text'] || '';
+
+            if (response.data instanceof Blob && response.data.size > 0) {
+                audioUrl = URL.createObjectURL(response.data);
+            }
+
+            if (!questionText) {
+                throw new Error('No question text received from server in headers.');
+            }
+
+            return { questionText, audioUrl };
+        } else if (response.data instanceof Blob) {
+             try {
                 const textContent = await response.data.text();
                 const jsonResponse = JSON.parse(textContent);
                 
@@ -247,47 +281,15 @@ const handleServerAudioResponse = async (response: any): Promise<{ questionText:
                     throw new Error('Interview completed');
                 }
             } catch (error) {
-                if (error instanceof Error && error.message === 'Interview completed') {
-                    throw error;
-                }
-                // If parsing fails, continue with blob handling
+                // ignore
             }
         }
-        
-        // Handle audio streaming response
-        if (response.headers['content-type']?.includes('audio/mpeg')) {
-            // Extract question text from headers (case-insensitive)
-            const headers = response.headers;
-            questionText = headers['x-question-text'] || 
-                         headers['X-Question-Text'] || 
-                         headers['X-QUESTION-TEXT'] ||
-                         headers['x-question-text'.toLowerCase()] || 
-                         '';
-            
-            console.log('Extracted question text:', questionText);
-            
-            // Check if response contains audio (blob)
-            if (response.data instanceof Blob && response.data.size > 0) {
-                // Create object URL for audio playback
-                audioUrl = URL.createObjectURL(response.data);
-                console.log('Created audio URL:', audioUrl);
-            }
-            
-            // If no question text found, this is an error
-            if (!questionText) {
-                console.error('No question text found in headers. Available headers:', Object.keys(headers));
-                throw new Error('No question text received from server. Check API response headers.');
-            }
-            
-            return { questionText, audioUrl };
-        }
-        
-        // If we get here, unknown response format
-        throw new Error('Unknown response format from server');
-        
+
+        throw new Error('Unknown or unsupported response format from server');
+
     } catch (error) {
         console.error('Error processing server audio response:', error);
-        if (error instanceof Error && error.message === 'Interview completed') {
+        if (error instanceof Error && error.message.includes('completed')) {
             throw error;
         }
         throw new Error(`Failed to process server audio response: ${error}`);
@@ -313,4 +315,4 @@ export {
     submitAudioResponseComp3,
     playAudioFromServer,
     handleServerAudioResponse
-}; 
+};
