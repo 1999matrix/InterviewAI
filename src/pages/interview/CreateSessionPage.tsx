@@ -170,33 +170,11 @@ const CreateSessionPage: React.FC = () => {
         await saveResume('upload_cv', resumeFormData);
       }
       
-      let questionResult;
-      if (formData.interviewMode === 'comp2') {
-        questionResult = await startTestComp2(
-          user?.name || user?.email || 'guest',
-          formData.jobRole,
-          formData.jobDescription,
-          experienceNumber,
-          formData.uploadResume && !!formData.file
-        );
-      } else if (formData.interviewMode === 'comp3') {
-        questionResult = await startTestComp3(
-          user?.name || user?.email || 'guest',
-          formData.jobRole,
-          formData.jobDescription,
-          experienceNumber,
-          formData.uploadResume && !!formData.file
-        );
-      }
-      
-      if (questionResult && questionResult.status === 200) {
-        // Handle the audio response from the server
-        const { questionText, audioUrl } = await handleServerAudioResponse(questionResult);
-        
-        navigate('/interview/session', {
+      // Route to different interview pages based on mode
+      if (formData.interviewMode === 'comp3') {
+        // For comp3, navigate to WebSocket-based interview page
+        navigate('/interview/websocket-session', {
           state: {
-            question: questionText,
-            audioUrl: audioUrl,
             interviewType: formData.interviewType,
             user: user?.name || user?.email || 'guest',
             interviewMode: formData.interviewMode,
@@ -206,6 +184,34 @@ const CreateSessionPage: React.FC = () => {
             uploadResume: formData.uploadResume && !!formData.file
           }
         });
+      } else if (formData.interviewMode === 'comp2') {
+        // For comp2, use the existing flow with HTTP API
+        let questionResult = await startTestComp2(
+          user?.name || user?.email || 'guest',
+          formData.jobRole,
+          formData.jobDescription,
+          experienceNumber,
+          formData.uploadResume && !!formData.file
+        );
+        
+        if (questionResult && questionResult.status === 200) {
+          // Handle the audio response from the server
+          const { questionText, audioUrl } = await handleServerAudioResponse(questionResult);
+          
+          navigate('/interview/session', {
+            state: {
+              question: questionText,
+              audioUrl: audioUrl,
+              interviewType: formData.interviewType,
+              user: user?.name || user?.email || 'guest',
+              interviewMode: formData.interviewMode,
+              role: formData.jobRole,
+              jobDescription: formData.jobDescription,
+              experience: experienceNumber,
+              uploadResume: formData.uploadResume && !!formData.file
+            }
+          });
+        }
       }
     } catch (error: any) {
       console.error('Error starting interview:', error);

@@ -26,6 +26,7 @@ import AptitudeTestPage from '../pages/interview/AptitudeTestPage';
 import KeycloakTestPage from '../pages/KeycloakTestPage';
 import Scheduler from '../pages/user/Scheduler';
 import Profile from '../pages/user/Profile';
+import WebSocketInterviewPage from '../pages/interview/WebSocketInterviewPage'; 
 
 const AppRoutes: React.FC = () => {
   return (
@@ -52,6 +53,9 @@ const AppRoutes: React.FC = () => {
           // <ProtectedRoute>
             <CreateSessionPage />
           // </ProtectedRoute>
+        } />
+        <Route path="/interview/websocket-session" element={
+          <WebSocketInterviewPage />
         } />
         <Route path="/interview/create" element={
           // <ProtectedRoute>

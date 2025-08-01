@@ -75,15 +75,15 @@ const AptitudeTestPage: React.FC = () => {
   // Initialize question states when questions are loaded
   useEffect(() => {
     if (questions.length > 0) {
-    const initialStates: Record<number, QuestionState> = {};
-    questions.forEach((q) => {
-      initialStates[q.id] = {
-        status: 'not-visited',
-        answer: null,
-        timeSpent: 0
-      };
-    });
-    setQuestionStates(initialStates);
+      const initialStates: Record<number, QuestionState> = {};
+      questions.forEach((q) => {
+        initialStates[q.id] = {
+          status: 'not-visited',
+          answer: null,
+          timeSpent: 0
+        };
+      });
+      setQuestionStates(initialStates);
     }
   }, [questions]);
   
@@ -124,7 +124,7 @@ const AptitudeTestPage: React.FC = () => {
       setIsFullScreen(!!document.fullscreenElement);
     };
 
-      document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     
     return () => {
@@ -166,9 +166,9 @@ const AptitudeTestPage: React.FC = () => {
   // Get current question
   const getCurrentQuestion = () => questions[currentQuestionIndex];
   const getCurrentQuestionState = () => questionStates[getCurrentQuestion()?.id] || {
-      status: 'not-visited',
-      answer: null,
-      timeSpent: 0
+    status: 'not-visited',
+    answer: null,
+    timeSpent: 0
   };
 
   // Answer handling
@@ -198,7 +198,7 @@ const AptitudeTestPage: React.FC = () => {
           ...prev[currentQuestion.id],
           answer,
           status: 'answered',
-          timeSpent: prev[currentQuestion.id]?.timeSpent + timeSpent || timeSpent
+          timeSpent: (prev[currentQuestion.id]?.timeSpent || 0) + timeSpent
         }
       }));
 
@@ -215,10 +215,10 @@ const AptitudeTestPage: React.FC = () => {
     if (!currentQuestion) return;
 
     try {
-    const currentState = getCurrentQuestionState();
+      const currentState = getCurrentQuestionState();
       const newStatus = currentState.status === 'marked-for-review' ? 'not-answered' : 
-                       currentState.status === 'answered-and-marked' ? 'answered' :
-                       currentState.answer ? 'answered-and-marked' : 'marked-for-review';
+                      currentState.status === 'answered-and-marked' ? 'answered' :
+                      currentState.answer ? 'answered-and-marked' : 'marked-for-review';
 
       await testService.markAptitudeQuestionForReview(
         sessionToken, 
@@ -230,7 +230,7 @@ const AptitudeTestPage: React.FC = () => {
         ...prev,
         [currentQuestion.id]: {
           ...prev[currentQuestion.id],
-      status: newStatus
+          status: newStatus
         }
       }));
     } catch (error) {
@@ -242,14 +242,14 @@ const AptitudeTestPage: React.FC = () => {
   const goToQuestion = (index: number) => {
     if (index >= 0 && index < questions.length) {
       // Update time spent on current question
-    const currentQuestion = getCurrentQuestion();
+      const currentQuestion = getCurrentQuestion();
       if (currentQuestion) {
         const timeSpent = Math.floor((Date.now() - questionStartTimeRef.current) / 1000);
         setQuestionStates(prev => ({
           ...prev,
           [currentQuestion.id]: {
             ...prev[currentQuestion.id],
-            timeSpent: prev[currentQuestion.id]?.timeSpent + timeSpent || timeSpent
+            timeSpent: (prev[currentQuestion.id]?.timeSpent || 0) + timeSpent
           }
         }));
       }
@@ -282,7 +282,7 @@ const AptitudeTestPage: React.FC = () => {
       ...prev,
       [currentQuestion.id]: {
         ...prev[currentQuestion.id],
-      answer: null,
+        answer: null,
         status: 'not-answered'
       }
     }));
@@ -322,7 +322,7 @@ const AptitudeTestPage: React.FC = () => {
         setTestCompleted(true);
         // Navigate to results page with results data
         navigate('/test-results', { 
-      state: {
+          state: {
             results: response.data,
             testType: 'aptitude'
           } 
@@ -427,7 +427,7 @@ const AptitudeTestPage: React.FC = () => {
               <div className="bg-gray-200 p-4 rounded-lg">
                 <h3 className="font-semibold mb-2 text-stone-700">Question Status Legend</h3>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs text-stone-800">
-                  <div className="flex items-center space-x-2 ">
+                  <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 bg-gray-400 rounded"></div>
                     <span>Not Visited</span>
                   </div>
@@ -480,7 +480,7 @@ const AptitudeTestPage: React.FC = () => {
     const currentQuestion = getCurrentQuestion();
     const currentState = getCurrentQuestionState();
 
-  return (
+    return (
       <div className="min-h-screen bg-gray-100">
         {/* Error Toast */}
         {error && (
@@ -498,20 +498,20 @@ const AptitudeTestPage: React.FC = () => {
               <div className="flex items-center text-orange-600 mb-4">
                 <AlertTriangle className="w-8 h-8 mr-3" />
                 <h3 className="text-lg font-semibold">Time Warning</h3>
-            </div>
+              </div>
               <p className="text-gray-700 mb-4">
                 Only 5 minutes remaining! Please review your answers and submit soon.
               </p>
               <Button onClick={() => setShowTimeWarning(false)} className="w-full">
                 Continue Test
-            </Button>
+              </Button>
+            </div>
           </div>
-        </div>
         )}
       
         {/* Submission Confirmation Modal */}
         {showSubmissionDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Submit Test?
@@ -526,14 +526,14 @@ const AptitudeTestPage: React.FC = () => {
                 <p className="text-sm text-red-600">
                   <strong>Not Attempted:</strong> {statusSummary.notVisited + statusSummary.notAnswered}
                 </p>
-            </div>
-            <p className="text-stone-700 mb-4">
-              {timeRemaining <= 300 ? 'Only 5 minutes remaining!' :
-               timeRemaining <= 900 ? 'Only 15 minutes remaining!' :
-               '30 minutes remaining!'}
-            </p>
+              </div>
+              <p className="text-stone-700 mb-4">
+                {timeRemaining <= 300 ? 'Only 5 minutes remaining!' :
+                 timeRemaining <= 900 ? 'Only 15 minutes remaining!' :
+                 '30 minutes remaining!'}
+              </p>
               <div className="flex space-x-3">
-            <Button 
+                <Button 
                   onClick={() => setShowSubmissionDialog(false)}
                   variant="outline"
                   className="flex-1"
@@ -546,106 +546,106 @@ const AptitudeTestPage: React.FC = () => {
                   className="flex-1"
                 >
                   {isEndingTest ? 'Submitting...' : 'Submit Test'}
-            </Button>
+                </Button>
               </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
       
         {/* Main Test Interface */}
         <div className="flex h-screen">
           {/* Question Palette Sidebar */}
-        {showQuestionPalette && (
-          <div className="w-80 bg-white shadow-sm border-r p-4">
-            <div className="mb-4">
-              <h3 className="font-semibold text-stone-900 mb-2">Question Palette</h3>
-              <div className="text-xs text-gray-stone space-y-1">
-                <div>Total: {questions.length}</div>
-                <div className="grid grid-cols-2 gap-2 text-stone-700 font-bold">
-                  <div>Answered: {statusSummary.answered + statusSummary['answered-and-marked']}</div>
-                  <div>Not Answered: {statusSummary['not-answered']}</div>
-                  <div>Marked: {statusSummary['marked-for-review'] + statusSummary['answered-and-marked']}</div>
-                  <div>Not Visited: {statusSummary['not-visited']}</div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-5 gap-2 mb-4">
-              {questions.map((question, index) => {
-                const state = questionStates[question.id];
-                const status = state?.status || 'not-visited';
-                const isCurrentQuestion = index === currentQuestionIndex;
-                
-                return (
-                  <button
-                    key={question.id}
-                    onClick={() => goToQuestion(index)}
-                      className={`w-10 h-10 rounded text-sm font-medium border-2 transition-all ${
-                        index === currentQuestionIndex 
-                          ? 'border-blue-500 ring-2 ring-blue-200' 
-                          : 'border-gray-300'
-                      } ${getStatusColor(questionStates[question.id]?.status || 'not-visited')}`}
-                  >
-                    {index + 1}
-                  </button>
-                  ))}
-                </div>
-                
-                {/* Legend */}
-                <div className="mt-4 space-y-2 text-xs">
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 bg-green-500 rounded mr-2"></div>
-                    <span>Answered</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 bg-red-500 rounded mr-2"></div>
-                    <span>Not Answered</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 bg-purple-500 rounded mr-2"></div>
-                    <span>Marked for Review</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 bg-blue-500 rounded mr-2"></div>
-                    <span>Answered & Marked</span>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 bg-gray-300 rounded mr-2"></div>
-                    <span>Not Visited</span>
-                  </div>
-                </div>
-
-                {/* Summary */}
-                <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
-                  <div className="grid grid-cols-2 gap-2">
+          {showQuestionPalette && (
+            <div className="w-80 bg-white shadow-sm border-r p-4">
+              <div className="mb-4">
+                <h3 className="font-semibold text-stone-900 mb-2">Question Palette</h3>
+                <div className="text-xs text-gray-stone space-y-1">
+                  <div>Total: {questions.length}</div>
+                  <div className="grid grid-cols-2 gap-2 text-stone-700 font-bold">
                     <div>Answered: {statusSummary.answered}</div>
                     <div>Not Answered: {statusSummary.notAnswered}</div>
                     <div>Marked: {statusSummary.markedForReview}</div>
                     <div>Not Visited: {statusSummary.notVisited}</div>
                   </div>
                 </div>
-            </div>
-            
-            {/* Tools */}
+              </div>
+              
+              <div className="grid grid-cols-5 gap-2 mb-4">
+                {questions.map((question, index) => {
+                  const state = questionStates[question.id];
+                  const status = state?.status || 'not-visited';
+                  const isCurrentQuestion = index === currentQuestionIndex;
+                  
+                  return (
+                    <button
+                      key={question.id}
+                      onClick={() => goToQuestion(index)}
+                      className={`w-10 h-10 rounded text-sm font-medium border-2 transition-all ${
+                        isCurrentQuestion 
+                          ? 'border-blue-500 ring-2 ring-blue-200' 
+                          : 'border-gray-300'
+                      } ${getStatusColor(status)}`}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              {/* Legend */}
+              <div className="mt-4 space-y-2 text-xs">
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-green-500 rounded mr-2"></div>
+                  <span>Answered</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-red-500 rounded mr-2"></div>
+                  <span>Not Answered</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-purple-500 rounded mr-2"></div>
+                  <span>Marked for Review</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-blue-500 rounded mr-2"></div>
+                  <span>Answered & Marked</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-gray-300 rounded mr-2"></div>
+                  <span>Not Visited</span>
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>Answered: {statusSummary.answered}</div>
+                  <div>Not Answered: {statusSummary.notAnswered}</div>
+                  <div>Marked: {statusSummary.markedForReview}</div>
+                  <div>Not Visited: {statusSummary.notVisited}</div>
+                </div>
+              </div>
+              
+              {/* Tools */}
               <div className="p-4 space-y-3">
-              <Button
+                <Button
                   onClick={() => setShowCalculator(!showCalculator)}
-                variant="outline"
-                size="sm"
+                  variant="outline"
+                  size="sm"
                   className="w-full"
-              >
-                <Calculator className="w-4 h-4 mr-2" />
-                Calculator
-              </Button>
-              <Button
+                >
+                  <Calculator className="w-4 h-4 mr-2" />
+                  Calculator
+                </Button>
+                <Button
                   onClick={() => setShowScratchpad(!showScratchpad)}
-                variant="outline"
-                size="sm"
+                  variant="outline"
+                  size="sm"
                   className="w-full"
-              >
-                <Edit3 className="w-4 h-4 mr-2" />
-                Scratchpad
-              </Button>
+                >
+                  <Edit3 className="w-4 h-4 mr-2" />
+                  Scratchpad
+                </Button>
                 <Button
                   onClick={toggleFullScreen}
                   variant="outline"
@@ -655,9 +655,9 @@ const AptitudeTestPage: React.FC = () => {
                   <Maximize className="w-4 h-4 mr-2" />
                   {isFullScreen ? 'Exit' : 'Enter'} Fullscreen
                 </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
         
           {/* Main Content */}
           <div className="flex-1 flex flex-col">
@@ -669,14 +669,14 @@ const AptitudeTestPage: React.FC = () => {
                     Question {currentQuestionIndex + 1} of {questions.length}
                   </span>
                   <span className="text-sm text-stone-700">
-                    {getCurrentQuestion()?.subject} | {getCurrentQuestion()?.difficulty}
+                    {currentQuestion?.subject} | {currentQuestion?.difficulty}
                   </span>
                   <span className="text-sm text-green-600 font-medium">
-                    +{getCurrentQuestion()?.marks} marks
+                    +{currentQuestion?.marks} marks
                   </span>
-                  {getCurrentQuestion()?.negativeMarks && (
+                  {currentQuestion?.negativeMarks && (
                     <span className="text-sm text-red-600">
-                      -{getCurrentQuestion()?.negativeMarks} for wrong answer
+                      -{currentQuestion?.negativeMarks} for wrong answer
                     </span>
                   )}
                 </div>
@@ -705,9 +705,9 @@ const AptitudeTestPage: React.FC = () => {
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
-                  </div>
                 </div>
               </div>
+            </div>
               
             {/* Question Content */}
             <div className="flex-1 overflow-y-auto">
@@ -715,12 +715,7 @@ const AptitudeTestPage: React.FC = () => {
                 {currentQuestion && (
                   <div className="bg-white rounded-lg shadow-sm p-6">
                     {/* Question Header */}
-              <div className="mb-6">
-                <p className="text-lg text-stone-900 leading-relaxed">
-                  {getCurrentQuestion()?.question}
-                </p>
-              </div>
-              
+                    <div className="mb-6">
                       <h2 className="text-xl font-semibold text-gray-900 mb-4">
                         Q{currentQuestionIndex + 1}. {currentQuestion.question}
                       </h2>
@@ -728,58 +723,65 @@ const AptitudeTestPage: React.FC = () => {
 
                     {/* Question Options */}
                     <div className="mb-6">
-                      {currentQuestion.options && currentQuestion.options.length > 0 ? (
+                      {currentQuestion.type === 'MCQ' && currentQuestion.options ? (
                         <div className="space-y-3">
-                          {currentQuestion.options.map((option) => (
-                    <label
-                      key={index}
-                      className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                        isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-400 hover:border-blue-300 hover:bg-blue-50'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-400'
-                      }`}>
-                        {isSelected && <div className="w-2 h-2 bg-white rounded-full"></div>}
-                      </div>
-                      <span className="font-medium text-stone-700 min-w-[20px]">{optionLabel}.</span>
-                      <span className="text-stone-900">{option}</span>
-                      <input
-                        type="radio"
-                        name={`question-${getCurrentQuestion()?.id}`}
-                        value={option}
-                        checked={isSelected}
-                        onChange={() => handleAnswerChange(option)}
-                        className="sr-only"
-                      />
-                    </label>
-                  );
-                })}
-                
-                {getCurrentQuestion()?.type === 'MSQ' && getCurrentQuestion()?.options?.map((option: string, index: number) => {
-                  const optionLabel = String.fromCharCode(65 + index); // A, B, C, D
-                  const currentAnswers = (getCurrentQuestionState().answer as string[]) || [];
-                  const isSelected = currentAnswers.includes(option);
-                  
-                  return (
-                    <label
-                      key={index}
-                      className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                        isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                        isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
-                      }`}>
-                        {isSelected && <CheckSquare className="w-3 h-3 text-white" />}
-                      </div>
-                      <span className="font-medium text-stone-700 min-w-[20px]">{optionLabel}.</span>
-                      <span className="text-stone-900">{option}</span>
-                      <input
-                        type="checkbox"
+                          {currentQuestion.options.map((option, index) => {
+                            const optionLabel = String.fromCharCode(65 + index); // A, B, C, D
+                            const isSelected = currentState.answer === option.key;
+                            
+                            return (
+                              <label
+                                key={option.key}
+                                className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                                  isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                                }`}
+                              >
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                  isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                                }`}>
+                                  {isSelected && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                                </div>
+                                <span className="font-medium text-stone-700 min-w-[20px]">{optionLabel}.</span>
+                                <span className="text-stone-900">{option.text}</span>
+                                <input
+                                  type="radio"
+                                  name={`question-${currentQuestion.id}`}
                                   value={option.key}
-                                  checked={Array.isArray(currentState.answer) && currentState.answer.includes(option.key)}
-                        onChange={(e) => {
+                                  checked={isSelected}
+                                  onChange={() => handleAnswerChange(option.key)}
+                                  className="sr-only"
+                                  disabled={isSubmittingAnswer}
+                                />
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : currentQuestion.type === 'MSQ' && currentQuestion.options ? (
+                        <div className="space-y-3">
+                          {currentQuestion.options.map((option, index) => {
+                            const optionLabel = String.fromCharCode(65 + index); // A, B, C, D
+                            const currentAnswers = Array.isArray(currentState.answer) ? currentState.answer : [];
+                            const isSelected = currentAnswers.includes(option.key);
+                            
+                            return (
+                              <label
+                                key={option.key}
+                                className={`flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                                  isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                                }`}
+                              >
+                                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                  isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                                }`}>
+                                  {isSelected && <CheckSquare className="w-3 h-3 text-white" />}
+                                </div>
+                                <span className="font-medium text-stone-700 min-w-[20px]">{optionLabel}.</span>
+                                <span className="text-stone-900">{option.text}</span>
+                                <input
+                                  type="checkbox"
+                                  value={option.key}
+                                  checked={isSelected}
+                                  onChange={(e) => {
                                     const currentAnswers = Array.isArray(currentState.answer) ? currentState.answer : [];
                                     if (e.target.checked) {
                                       handleAnswerChange([...currentAnswers, option.key]);
@@ -787,65 +789,62 @@ const AptitudeTestPage: React.FC = () => {
                                       handleAnswerChange(currentAnswers.filter(a => a !== option.key));
                                     }
                                   }}
-                                  className="mr-3"
+                                  className="sr-only"
                                   disabled={isSubmittingAnswer}
                                 />
-                              )}
-                              <span className="font-medium mr-3">{option.key}.</span>
-                              <span>{option.text}</span>
-                    </label>
-                  );
-                })}
-                
-                {getCurrentQuestion()?.type === 'NAT' && (
-                  <div className="space-y-3">
-                    <label className="block text-sm font-medium text-stone-700">
-                      Enter your numerical answer:
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                            value={currentState.answer || ''}
-                      onChange={(e) => handleAnswerChange(parseFloat(e.target.value) || 0)}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : currentQuestion.type === 'NAT' ? (
+                        <div className="space-y-3">
+                          <label className="block text-sm font-medium text-stone-700">
+                            Enter your numerical answer:
+                          </label>
+                          <input
+                            type="number"
+                            step="any"
+                            value={typeof currentState.answer === 'number' ? currentState.answer : ''}
+                            onChange={(e) => handleAnswerChange(parseFloat(e.target.value) || 0)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter numerical answer"
+                            placeholder="Enter numerical answer"
                             disabled={isSubmittingAnswer}
-                    />
-                  </div>
-                )}
-            </div>
-            
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                    
                     {/* Action Buttons */}
                     <div className="flex justify-between items-center">
                       <div className="flex space-x-3">
-                  <Button
+                        <Button
                           onClick={clearAnswer}
-                    variant="outline"
+                          variant="outline"
                           size="sm"
                           disabled={!currentState.answer}
-                  >
+                        >
                           <RotateCcw className="w-4 h-4 mr-2" />
                           Clear
-                  </Button>
-                  <Button
+                        </Button>
+                        <Button
                           onClick={markForReview}
-                    variant="outline"
+                          variant="outline"
                           size="sm"
                           className={currentState.status.includes('marked') ? 'bg-purple-100 border-purple-300' : ''}
-                  >
+                        >
                           {currentState.status.includes('marked') ? 'Unmark' : 'Mark for Review'}
-                  </Button>
+                        </Button>
                       </div>
-                  
+                    
                       <div className="flex space-x-3">
-                  <Button
+                        <Button
                           onClick={goToPreviousQuestion}
-                    variant="outline"
+                          variant="outline"
                           disabled={currentQuestionIndex === 0}
-                  >
+                        >
                           <ArrowLeft className="w-4 h-4 mr-2" />
                           Previous
-                  </Button>
+                        </Button>
                         
                         {currentQuestionIndex === questions.length - 1 ? (
                           <Button
@@ -857,105 +856,106 @@ const AptitudeTestPage: React.FC = () => {
                           </Button>
                         ) : (
                           <>
-                  <Button
-                    onClick={saveAndNext}
+                            <Button
+                              onClick={saveAndNext}
                               disabled={!currentState.answer || isSubmittingAnswer}
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    Save & Next
-                  </Button>
-                  <Button
-                    onClick={goToNextQuestion}
+                            >
+                              <Save className="w-4 h-4 mr-2" />
+                              Save & Next
+                            </Button>
+                            <Button
+                              onClick={goToNextQuestion}
                               variant="outline"
-                  >
-                    Next
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
+                            >
+                              Next
+                              <ArrowRight className="w-4 h-4 ml-2" />
+                            </Button>
                           </>
                         )}
-                </div>
-              </div>
+                      </div>
+                    </div>
                   </div>
                 )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
       
         {/* Calculator Modal */}
-      {showCalculator && (
-        <div className="fixed bottom-4 right-4 bg-gradient-to-r from-rose-300 to-blue-400 rounded-lg shadow-lg border p-4 w-64 z-40">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-medium text-stone-700">Calculator</h3>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowCalculator(false)}
-                  className="text-gray-500 hover:text-gray-700"
-            >
-              ×
-                </button>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="bg-gray-100 p-2 rounded text-right font-mono text-stone-700 font-bold">
-              {calculatorDisplay}
+        {showCalculator && (
+          <div className="fixed bottom-4 right-4 bg-gradient-to-r from-rose-300 to-blue-400 rounded-lg shadow-lg border p-4 w-64 z-40">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-medium text-stone-700">Calculator</h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCalculator(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </Button>
             </div>
             
-            <div className="grid grid-cols-4 gap-2 bg-slate-600 p-1">
-              {['C', '÷', '×', '⌫', '7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '0', '.', '00', '='].map((btn, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleCalculatorInput(btn)}
-                  className={`h-10 ${btn === '=' ? 'col-span-2 bg-gray-500 text-white' : ''}, bg-slate-500 rounded-md`}
-                >
-                  {btn}
-                </button>
-              ))}
+            <div className="space-y-2">
+              <div className="bg-gray-100 p-2 rounded text-right font-mono text-stone-700 font-bold">
+                {calculatorDisplay}
+              </div>
+              
+              <div className="grid grid-cols-4 gap-2 bg-slate-600 p-1">
+                {['C', '÷', '×', '⌫', '7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '0', '.', '00', '='].map((btn, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      // Handle calculator input
+                      if (btn === 'C') {
+                        setCalculatorDisplay('0');
+                      } else if (btn === '⌫') {
+                        setCalculatorDisplay(prev => prev.length > 1 ? prev.slice(0, -1) : '0');
+                      } else if (btn === '=') {
+                        try {
+                          // Replace ÷ and × with / and * for eval
+                          const expression = calculatorDisplay.replace(/÷/g, '/').replace(/×/g, '*');
+                          setCalculatorDisplay(eval(expression).toString());
+                        } catch {
+                          setCalculatorDisplay('Error');
+                        }
+                      } else {
+                        setCalculatorDisplay(prev => prev === '0' ? btn : prev + btn);
+                      }
+                    }}
+                    className={`h-10 ${btn === '=' ? 'col-span-2 bg-gray-500 text-white' : 'bg-slate-500'} rounded-md`}
+                  >
+                    {btn}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       
         {/* Scratchpad Modal */}
-      {showScratchpad && (
+        {showScratchpad && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-96 h-96">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Scratchpad</h3>
                 <button
-              onClick={() => setShowScratchpad(false)}
+                  onClick={() => setShowScratchpad(false)}
                   className="text-gray-500 hover:text-gray-700"
-            >
-              ×
+                >
+                  ×
                 </button>
-          </div>
-          <textarea
-            value={scratchpadContent}
-            onChange={(e) => setScratchpadContent(e.target.value)}
-                className="w-full h-64 p-3 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Use this space for rough work..."
-          />
-            </div>
-        </div>
-      )}
-      
-      {/* Submission dialog */}
-      {showSubmissionDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4 text-stone-800">Submit Exam</h3>
-            <p className="text-stone-700 mb-4">
-              Are you sure you want to submit your exam? This action cannot be undone.
-            </p>
-            
-            <div className="bg-gray-200 p-3 rounded mb-4 text-sm text-stone-700">
-              <div className="grid grid-cols-2 gap-2">
-                <div>Total Questions: {questions.length}</div>
-                <div>Answered: {statusSummary.answered + statusSummary['answered-and-marked']}</div>
-                <div>Not Answered: {statusSummary['not-answered'] + statusSummary['not-visited']}</div>
-                <div>Marked for Review: {statusSummary['marked-for-review'] + statusSummary['answered-and-marked']}</div>
               </div>
+              <textarea
+                value={scratchpadContent}
+                onChange={(e) => setScratchpadContent(e.target.value)}
+                className="w-full h-64 p-3 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Use this space for rough work..."
+              />
+            </div>
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -965,9 +965,9 @@ const AptitudeTestPage: React.FC = () => {
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
         <p className="text-gray-600">Loading test...</p>
-            </div>
+      </div>
     </div>
   );
 };
 
-export default AptitudeTestPage; 
+export default AptitudeTestPage;
