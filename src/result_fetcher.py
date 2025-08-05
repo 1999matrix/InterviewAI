@@ -174,3 +174,50 @@ class UserHistoryFetcher:
                 cursor.close()
             if connection:
                 connection.close()
+
+    def get_result_by_session_id(self, session_id: str):
+        """
+        Fetch user history record by session_id
+        Returns: session_id, component_type, record_date, percentage, report, username, user_id
+        """
+        connection = connect_to_db()
+        if connection is None:
+            return {"error": "Failed to connect to database"}
+        try:
+            cursor = connection.cursor(cursor_factory=DictCursor)
+            query = f"""
+                SELECT session_id, component_type, record_date, percentage, report, username, user_id
+                FROM {self.user_history_table}
+                WHERE session_id = %s
+                LIMIT 1
+            """
+            cursor.execute(query, (session_id,))
+            result = cursor.fetchone()
+            if not result:
+                return {
+                    "message": f"No result found for session_id: {session_id}",
+                    "data": None
+                }
+            record = {
+                "session_id": result['session_id'],
+                "component_type": result['component_type'],
+                "record_date": result['record_date'].isoformat() if result['record_date'] else None,
+                "percentage": float(result['percentage']) if result['percentage'] else None,
+                "report": result['report'],
+                "username": result['username'],
+                "user_id": result['user_id']
+            }
+            return {
+                "message": "Result fetched by session_id successfully",
+                "session_id": session_id,
+                "data": record
+            }
+        except psycopg2.Error as error:
+            return {"error": f"Database error: {str(error)}"}
+        except Exception as e:
+            return {"error": f"Unexpected error: {str(e)}"}
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()

@@ -541,6 +541,25 @@ async def get_latest_user_result_api(username: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get('/api/v1/get_user_history_by_session_id')
+async def get_user_history_by_session_id_api(session_id: str):
+    """
+    Fetch user history record by session_id
+    Returns: session_id, component_type, record_date, percentage, report, username, user_id
+    """
+    if not session_id:
+        raise HTTPException(status_code=400, detail="Session ID parameter is missing")
+    try:
+        fetcher = UserHistoryFetcher()
+        result = fetcher.get_result_by_session_id(session_id)
+        if "error" in result:
+            raise HTTPException(status_code=500, detail=result["error"])
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # WebSocket endpoint for real-time interview communication (comp3)
 @app.websocket("/ws/interview_comp3/{username}")
 async def websocket_interview_comp3(websocket: WebSocket, username: str):
