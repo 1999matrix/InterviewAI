@@ -43,12 +43,15 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [initializationAttempted, setInitializationAttempted] = useState(false);
+  const [kcInitialized, setKcInitialized] = useState(false);
   
   useEffect(() => {
     // Prevent multiple initialization attempts
     if (!initializationAttempted) {
       setInitializationAttempted(true);
-      initializeKeycloak();
+      if(!kcInitialized){
+        initializeKeycloak();
+      }
     }
   }, [initializationAttempted]);
   
@@ -60,6 +63,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       if (authenticated) {
         await loadUserProfile();
         setIsAuthenticated(true);
+        setKcInitialized(true);
       }
     } catch (error) {
       console.error('Keycloak initialization error:', error);

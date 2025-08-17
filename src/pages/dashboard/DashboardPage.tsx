@@ -26,22 +26,22 @@ const DashboardPage: React.FC = () => {
       score: 85,
       questionCount: 12,
     },
-    {
-      id: 2,
-      title: 'Full Stack JavaScript',
-      date: '2025-03-12',
-      duration: 42,
-      score: 78,
-      questionCount: 15,
-    },
-    {
-      id: 3,
-      title: 'Backend Node.js Engineer',
-      date: '2025-03-08',
-      duration: 28,
-      score: 92,
-      questionCount: 10,
-    },
+    // {
+    //   id: 2,
+    //   title: 'Full Stack JavaScript',
+    //   date: '2025-03-12',
+    //   duration: 42,
+    //   score: 78,
+    //   questionCount: 15,
+    // },
+    // {
+    //   id: 3,
+    //   title: 'Backend Node.js Engineer',
+    //   date: '2025-03-08',
+    //   duration: 28,
+    //   score: 92,
+    //   questionCount: 10,
+    // },
   ];
   
   return (

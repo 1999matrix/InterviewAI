@@ -243,6 +243,14 @@ const getUserResults = (url: string, username: string) => {
     });
 }
 
+const getUserResultComp2 = (url: string, username: string) => {
+    return axios.get(`${serverUrl}/${url}`, {
+        params: {
+            username: username
+        }
+    });
+};
+
 const startTestComp2 = (user: string, role: string, jobdesc: string, experience: number, resume: boolean) => {
     let body = {
         username: user,
@@ -296,14 +304,6 @@ const getNextQuestionComp3 = (user: string, response: string) => {
         responseType: 'json',
         headers: {
             'Accept': 'application/json'
-        }
-    });
-};
-
-const getUserResultComp2 = (url: string, username: string) => {
-    return axios.get(`${serverUrl}/${url}`, {
-        params: {
-            username: username
         }
     });
 };
@@ -433,6 +433,36 @@ const stopSpeaking = () => {
     }
 };
 
+//login and Signup
+const userLogin = (userName: string, password: string) => {
+    return axios.get(`${serverUrl}/sign-up`, { params: {
+      userName: userName,
+      password: password
+    }})
+}
+
+const userRegistration = (userName: string, email: string, password: string ) => {
+  let body = {
+    user: userName,
+    email: email,
+    password: password
+  }
+  return axios.post(`${serverUrl}/sign-up`, body, {headers: {'Content-Type': 'application/json'}})
+}
+
+//User Details
+const getUderData = (url: string, userName: string) => {
+    return axios.get(`${serverUrl}/${url}`, {
+        params: {
+            username: userName
+        }
+    });
+}
+
+const updatUserData = (url: string, data: any) => {
+    return 
+}
+
 export {
     serverUrl, 
     saveResume, 
@@ -451,5 +481,7 @@ export {
     handleServerAudioResponse,
     speakText,
     stopSpeaking,
-    getWebSocketUrl
+    getWebSocketUrl,
+    userLogin,
+    userRegistration
 };

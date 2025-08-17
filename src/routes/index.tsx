@@ -27,7 +27,8 @@ import CodingTestResultsPage from '../pages/interview/CodingTestResultsPage';
 import KeycloakTestPage from '../pages/KeycloakTestPage';
 import Scheduler from '../pages/user/Scheduler';
 import Profile from '../pages/user/Profile';
-import WebSocketInterviewPage from '../pages/interview/WebSocketInterviewPage'; 
+import WebSocketInterviewPage from '../pages/interview/WebSocketInterviewPage';
+import ResultFeedback from '../pages/interview/ResultFeedback';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -71,6 +72,11 @@ const AppRoutes: React.FC = () => {
         <Route path="/interview/profile" element={
           // <ProtectedRoute>
             <Profile />
+          // </ProtectedRoute>
+        } />
+        <Route path="/interview/result" element={
+          // <ProtectedRoute>
+            <ResultFeedback />
           // </ProtectedRoute>
         } />
         <Route path="/interview/session" element={

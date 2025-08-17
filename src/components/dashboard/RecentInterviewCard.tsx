@@ -54,7 +54,11 @@ const RecentInterviewCard: React.FC<RecentInterviewCardProps> = ({ interview }) 
         
         <div className="mt-3 flex justify-between items-center">
           <span className="text-xs text-gray-500 dark:text-gray-500">{interview.questionCount} questions</span>
-          <span className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">View Details</span>
+          <Link to="/interview/result" className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-green-300 transition-colors">
+                View details
+                {/* <ExternalLink className="w-3.5 h-3.5 ml-1" /> */}
+          </Link>
+          {/* <span className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-green-300 transition-colors">View Details</span> */}
         </div>
       </div>
     </Link>

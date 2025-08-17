@@ -313,12 +313,12 @@ const CreateSessionPage: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm p-8 mb-6">
         {currentStep === 1 && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold mb-4 text-stone-800">Select Interview Mode</h2>
-            <p className="text-stone-700 mb-8">Choose your interview experience.</p>
+            <h2 className="text-xl font-semibold text-center mb-4 text-stone-800">Select Interview Mode</h2>
+            <p className="text-stone-700 text-center mb-8">Choose your interview experience.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <button
                 type="button"
-                className={`flex flex-col items-center justify-center border rounded-lg p-6 transition-all ${
+                className={`flex flex-col items-center justify-center border border-gray-500 rounded-lg p-6 transition-all ${
                   formData.interviewMode === 'comp2'
                     ? 'border-blue-600 ring-2 ring-blue-200 bg-blue-50'
                     : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
@@ -328,14 +328,14 @@ const CreateSessionPage: React.FC = () => {
                 <div className="mb-2">
                   <Briefcase size={32} className="text-blue-600" />
                 </div>
-                <h3 className="text-lg font-medium text-stone-800">No Cross-Questioning</h3>
+                <h3 className="text-lg font-medium text-stone-800">Actual Interview</h3>
                 <p className="text-stone-700 text-sm mt-2 text-center">
                   Standard interview : No follow-up questions asked (Replicate L1 interview).
                 </p>
               </button>
               <button
                 type="button"
-                className={`flex flex-col items-center justify-center border rounded-lg p-6 transition-all ${
+                className={`flex flex-col items-center justify-center border border-gray-500 rounded-lg p-6 transition-all ${
                   formData.interviewMode === 'comp3'
                     ? 'border-blue-600 ring-2 ring-blue-200 bg-blue-50'
                     : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
@@ -345,14 +345,14 @@ const CreateSessionPage: React.FC = () => {
                 <div className="mb-2">
                   <Brain size={32} className="text-blue-600" />
                 </div>
-                <h3 className="text-lg font-medium text-stone-800">With Cross-Questioning</h3>
+                <h3 className="text-lg font-medium text-stone-800">Interview Practice</h3>
                 <p className="text-stone-700 text-sm mt-2 text-center">
                   Dynamic interview : Get follow-up questions based on your answers.
                 </p>
               </button>
               <button
                 type="button"
-                className={`flex flex-col items-center justify-center border rounded-lg p-6 transition-all ${
+                className={`flex flex-col items-center justify-center border border-gray-500 rounded-lg p-6 transition-all ${
                   formData.interviewMode === 'coding-test'
                     ? 'border-blue-600 ring-2 ring-blue-200 bg-blue-50'
                     : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
@@ -369,7 +369,7 @@ const CreateSessionPage: React.FC = () => {
               </button>
               <button
                 type="button"
-                className={`flex flex-col items-center justify-center border rounded-lg p-6 transition-all ${
+                className={`flex flex-col items-center justify-center border border-gray-500 rounded-lg p-6 transition-all ${
                   formData.interviewMode === 'aptitude-test'
                     ? 'border-blue-600 ring-2 ring-blue-200 bg-blue-50'
                     : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'

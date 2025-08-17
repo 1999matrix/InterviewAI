@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { UserPlus, User, Lock, Mail, ArrowRight, CheckCircle } from 'lucide-react';
 import { AuthContext } from '../../contexts/AuthContext';
 import Button from '../../components/ui/Button';
+import { userRegistration } from '../../services/Sharedservice';
 
 const SignupPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -78,7 +79,7 @@ const SignupPage: React.FC = () => {
     setError('');
     
     try {
-      await register(formData.name, formData.email, formData.password);
+      await userRegistration(formData.name, formData.email, formData.password);
       navigate('/dashboard');
     } catch (err) {
       setError('Failed to create account. Please try again.');
@@ -88,7 +89,7 @@ const SignupPage: React.FC = () => {
   };
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-rose-100 to-blue-300 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-md">
         <div className="text-center">
           <UserPlus className="mx-auto h-12 w-12 text-blue-600" />
