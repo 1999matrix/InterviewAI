@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Clock, 
@@ -7,20 +7,15 @@ import {
   Eye, 
   AlertTriangle, 
   CheckCircle, 
-  Circle, 
-  Square, 
   CheckSquare,
   ArrowLeft,
   ArrowRight,
   RotateCcw,
   Save,
-  FileText,
-  Home,
-  Lock,
   Maximize
 } from 'lucide-react';
 import Button from '../../components/ui/Button';
-import testService, { AptitudeQuestion } from '../../services/testService';
+import testService, { AptitudeQuestion, AptitudeQuestionOption } from '../../services/testService';
 import { useErrorHandler, ErrorToast } from '../../utils/errorHandler';
 
 // Question state interface
@@ -48,7 +43,6 @@ const AptitudeTestPage: React.FC = () => {
   
   // Timer state
   const [timeRemaining, setTimeRemaining] = useState(60 * 60); // 60 minutes in seconds
-  const [testStartTime, setTestStartTime] = useState<number | null>(null);
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   
   // UI state
@@ -66,7 +60,6 @@ const AptitudeTestPage: React.FC = () => {
   
   // Security monitoring
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
-  const [suspiciousActivity, setSuspiciousActivity] = useState<string[]>([]);
   
   // Refs
   const questionStartTimeRef = useRef<number>(Date.now());
@@ -116,7 +109,6 @@ const AptitudeTestPage: React.FC = () => {
     const handleVisibilityChange = () => {
       if (document.hidden && testStarted && !testCompleted) {
         setTabSwitchCount(prev => prev + 1);
-        setSuspiciousActivity(prev => [...prev, `Tab switched at ${new Date().toLocaleTimeString()}`]);
       }
     };
     
@@ -141,7 +133,7 @@ const AptitudeTestPage: React.FC = () => {
 
       const response = await testService.startAptitudeTest({
         userId: 1, // Replace with actual user ID from auth context
-        subjects: ['Mathematics', 'Logical Reasoning', 'English'], // Can be made configurable
+        subjects: ['Mathematics', 'Logical Reasoning'], // Can be made configurable
         difficulty: 'Medium',
         duration: 60,
         questionCount: 20
@@ -151,7 +143,6 @@ const AptitudeTestPage: React.FC = () => {
         setQuestions(response.data.questions);
         setSessionToken(response.data.sessionToken);
         setTimeRemaining(response.data.duration * 60);
-        setTestStartTime(Date.now());
         setTestStarted(true);
         setShowInstructions(false);
         questionStartTimeRef.current = Date.now();
@@ -725,7 +716,7 @@ const AptitudeTestPage: React.FC = () => {
                     <div className="mb-6">
                       {currentQuestion.type === 'MCQ' && currentQuestion.options ? (
                         <div className="space-y-3">
-                          {currentQuestion.options.map((option, index) => {
+                          {currentQuestion.options.map((option: AptitudeQuestionOption, index: number) => {
                             const optionLabel = String.fromCharCode(65 + index); // A, B, C, D
                             const isSelected = currentState.answer === option.key;
                             
@@ -758,7 +749,7 @@ const AptitudeTestPage: React.FC = () => {
                         </div>
                       ) : currentQuestion.type === 'MSQ' && currentQuestion.options ? (
                         <div className="space-y-3">
-                          {currentQuestion.options.map((option, index) => {
+                          {currentQuestion.options.map((option: AptitudeQuestionOption, index: number) => {
                             const optionLabel = String.fromCharCode(65 + index); // A, B, C, D
                             const currentAnswers = Array.isArray(currentState.answer) ? currentState.answer : [];
                             const isSelected = currentAnswers.includes(option.key);

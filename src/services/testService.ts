@@ -1,366 +1,525 @@
 import axios from 'axios';
+import { serverUrl } from './Sharedservice';
 
-// Base URL for the backend API
-const API_BASE_URL = import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:8081/v1';
+// Types for aptitude test
+export interface AptitudeQuestionOption {
+  key: string;
+  text: string;
+}
 
-// Types for API requests and responses
-export interface StartAptitudeTestRequest {
+export interface AptitudeQuestion {
+  id: number;
+  questionNumber: number;
+  question: string;
+  type: 'MCQ' | 'MSQ' | 'NAT' | 'TRUE_FALSE';
+  subject: string;
+  topic?: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  marks: number;
+  negativeMarks: number;
+  options?: AptitudeQuestionOption[];
+}
+
+export interface AptitudeTestSession {
+  sessionToken: string;
+  sessionId: number;
+  duration: number;
+  totalQuestions: number;
+  questions: AptitudeQuestion[];
+  startTime: string;
+}
+
+export interface AptitudeSessionStatus {
+  sessionToken: string;
+  status: string;
+  timeRemaining: number;
+  totalQuestions: number;
+  answeredQuestions: number;
+  reviewedQuestions: number;
+  currentScore: number;
+  startTime: string;
+  endTime?: string;
+}
+
+export interface AptitudeTestResults {
+  sessionId: number;
+  totalQuestions: number;
+  attemptedQuestions: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  unattempted: number;
+  totalMarks: number;
+  percentage: number;
+  timeTaken: number;
+  subjectWiseResults: Record<string, {
+    total: number;
+    correct: number;
+    marks: number;
+  }>;
+  startTime: string;
+  endTime: string;
+}
+
+export interface Subject {
+  subject: string;
+  questionCount: number;
+}
+
+// Types for coding test
+export interface CodingQuestion {
+  id: number;
+  questionNumber: number;
+  question: string;
+  description: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  testCases: TestCase[];
+  savedCode?: string;
+  savedLanguage?: string;
+}
+
+export interface TestCase {
+  id: number;
+  input: string;
+  expectedOutput: string;
+  isHidden?: boolean;
+}
+
+export interface CodingTestSession {
+  sessionToken: string;
+  sessionId: number;
+  duration: number;
+  totalQuestions: number;
+  questions: CodingQuestion[];
+  supportedLanguages: string[];
+  startTime: string;
+}
+
+export interface TestResult {
+  passed: boolean;
+  output: string;
+  runtime?: string;
+  memory?: string;
+  error?: string;
+}
+
+export interface RunCodeResult {
+  success: boolean;
+  data?: {
+    results: TestResult[];
+    summary: {
+      total: number;
+      passed: number;
+      failed: number;
+    };
+  };
+  message?: string;
+}
+
+export interface SubmitCodeResult {
+  success: boolean;
+  data?: {
+    questionId: number;
+    testCasesPassed: number;
+    totalTestCases: number;
+    marksObtained: number;
+    compilationStatus: string;
+    submitted: boolean;
+    errorMessage?: string;
+  };
+  message?: string;
+}
+
+export interface SessionStatus {
+  sessionToken: string;
+  status: string;
+  timeRemaining: number;
+  totalQuestions: number;
+  submittedQuestions: number;
+  currentScore: number;
+  startTime: string;
+  endTime?: string;
+}
+
+export interface FinalResults {
+  sessionId: number;
+  totalQuestions: number;
+  attemptedQuestions: number;
+  fullyCorrect: number;
+  partiallyCorrect: number;
+  incorrect: number;
+  unattempted: number;
+  totalMarks: number;
+  percentage: number;
+  timeTaken: number;
+  languageWiseResults: Record<string, any>;
+  startTime: string;
+  endTime: string;
+}
+
+// API Service class for coding tests
+export class CodingTestService {
+  private baseUrl: string;
+
+  constructor() {
+    this.baseUrl = `${serverUrl}/v1/coding`;
+  }
+
+  /**
+   * Start a new coding test session
+   */
+  async startTest(params: {
+    username?: string;
+    email?: string;
+    userId?: number;
+    difficulty?: 'Easy' | 'Medium' | 'Hard';
+    language?: string;
+    duration?: number;
+    questionCount?: number;
+  }): Promise<CodingTestSession> {
+    try {
+      const response = await axios.post(`${this.baseUrl}/start`, params);
+      
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to start coding test');
+      }
+      
+      return response.data.data as CodingTestSession;
+    } catch (error: any) {
+      console.error('Start coding test error:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Failed to start coding test');
+    }
+  }
+
+  /**
+   * Run code against test cases (for testing)
+   */
+  async runCode(params: {
+    sessionToken: string;
+    questionId: number;
+    language: string;
+    code: string;
+    testCaseIndex?: number;
+  }): Promise<RunCodeResult> {
+    try {
+      const response = await axios.post(`${this.baseUrl}/run`, params);
+      return response.data;
+    } catch (error: any) {
+      console.error('Run code error:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Failed to run code');
+    }
+  }
+
+  /**
+   * Submit final code solution
+   */
+  async submitCode(params: {
+    sessionToken: string;
+    questionId: number;
+    language: string;
+    code: string;
+    timeSpent?: number;
+  }): Promise<SubmitCodeResult> {
+    try {
+      const response = await axios.post(`${this.baseUrl}/submit`, params);
+      return response.data;
+    } catch (error: any) {
+      console.error('Submit code error:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Failed to submit code');
+    }
+  }
+
+  /**
+   * Auto-save code without submitting
+   */
+  async autoSave(params: {
+    sessionToken: string;
+    questionId: number;
+    language: string;
+    code: string;
+  }): Promise<{ success: boolean; message: string; timestamp: string }> {
+    try {
+      const response = await axios.post(`${this.baseUrl}/autosave`, params);
+      return response.data;
+    } catch (error: any) {
+      console.error('Auto-save error:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Failed to auto-save code');
+    }
+  }
+
+  /**
+   * Get current question and saved code
+   */
+  async getCurrentQuestion(sessionToken: string, questionId: number): Promise<{
+    question: CodingQuestion;
+    sessionInfo: {
+      timeRemaining: number;
+      totalQuestions: number;
+      attemptedQuestions: number;
+    };
+  }> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/question/${sessionToken}/${questionId}`);
+      
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to get question');
+      }
+      
+      return response.data.data;
+    } catch (error: any) {
+      console.error('Get current question error:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Failed to get question');
+    }
+  }
+
+  /**
+   * Get session status
+   */
+  async getSessionStatus(sessionToken: string): Promise<SessionStatus> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/session/${sessionToken}`);
+      
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to get session status');
+      }
+      
+      return response.data.data as SessionStatus;
+    } catch (error: any) {
+      console.error('Get session status error:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Failed to get session status');
+    }
+  }
+
+  /**
+   * End coding test and get results
+   */
+  async endTest(sessionToken: string): Promise<FinalResults> {
+    try {
+      const response = await axios.post(`${this.baseUrl}/end`, { sessionToken });
+      
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to end test');
+      }
+      
+      return response.data.data as FinalResults;
+    } catch (error: any) {
+      console.error('End test error:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Failed to end test');
+    }
+  }
+
+  /**
+   * Check if session is still valid
+   */
+  async validateSession(sessionToken: string): Promise<boolean> {
+    try {
+      const status = await this.getSessionStatus(sessionToken);
+      return status.status === 'started' || status.status === 'ongoing';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Get time remaining for session
+   */
+  async getTimeRemaining(sessionToken: string): Promise<number> {
+    try {
+      const status = await this.getSessionStatus(sessionToken);
+      return status.timeRemaining;
+    } catch (error) {
+      return 0;
+    }
+  }
+}
+
+// API Service class for aptitude tests
+export class AptitudeTestService {
+  private baseUrl: string;
+
+  constructor() {
+    this.baseUrl = `${serverUrl}/v1/aptitude`;
+  }
+
+  /**
+   * Start a new aptitude test session
+   */
+  async startTest(params: {
     userId: number;
     subjects?: string[];
     difficulty?: 'Easy' | 'Medium' | 'Hard';
     duration?: number;
     questionCount?: number;
-}
+  }): Promise<{ success: boolean; data: AptitudeTestSession; message: string }> {
+    try {
+      const response = await axios.post(`${this.baseUrl}/start`, params);
+      
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to start aptitude test');
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Start aptitude test error:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Failed to start aptitude test');
+    }
+  }
 
-export interface StartCodingTestRequest {
-    userId: number;
-    difficulty?: 'Easy' | 'Medium' | 'Hard';
-    language?: 'javascript' | 'python' | 'java' | 'cpp';
-    duration?: number;
-    questionCount?: number;
-}
-
-export interface SubmitAptitudeAnswerRequest {
+  /**
+   * Submit answer for a question
+   */
+  async submitAnswer(params: {
     sessionToken: string;
     questionId: number;
-    answer: string | number | string[];
+    answer: string | string[] | number;
     timeSpent?: number;
     isReviewed?: boolean;
+  }): Promise<{ success: boolean; data: { isCorrect: boolean; marksObtained: number; questionId: number; submitted: boolean }; message: string }> {
+    try {
+      const response = await axios.post(`${this.baseUrl}/submit-answer`, params);
+      return response.data;
+    } catch (error: any) {
+      console.error('Submit aptitude answer error:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Failed to submit answer');
+    }
+  }
+
+  /**
+   * Mark question for review
+   */
+  async markForReview(sessionToken: string, questionId: number, isReviewed: boolean): Promise<{ success: boolean; data: { questionId: number; isReviewed: boolean }; message: string }> {
+    try {
+      const response = await axios.post(`${this.baseUrl}/mark-review`, {
+        sessionToken,
+        questionId,
+        isReviewed
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Mark for review error:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Failed to mark question for review');
+    }
+  }
+
+  /**
+   * Get session status
+   */
+  async getSessionStatus(sessionToken: string): Promise<{ success: boolean; data: AptitudeSessionStatus }> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/session/${sessionToken}`);
+      
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to get session status');
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Get aptitude session status error:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Failed to get session status');
+    }
+  }
+
+  /**
+   * End aptitude test and get results
+   */
+  async endTest(sessionToken: string): Promise<{ success: boolean; data: AptitudeTestResults; message: string }> {
+    try {
+      const response = await axios.post(`${this.baseUrl}/end`, { sessionToken });
+      
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to end test');
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('End aptitude test error:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Failed to end test');
+    }
+  }
+
+  /**
+   * Get available subjects
+   */
+  async getSubjects(): Promise<{ success: boolean; data: Subject[] }> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/subjects`);
+      
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to get subjects');
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Get subjects error:', error);
+      throw new Error(error.response?.data?.message || error.message || 'Failed to get subjects');
+    }
+  }
 }
 
-export interface SubmitCodeRequest {
-    sessionToken: string;
-    questionId: number;
-    language: 'javascript' | 'python' | 'java' | 'cpp';
-    code: string;
-    timeSpent?: number;
-}
+// Create singleton instances
+export const codingTestService = new CodingTestService();
+export const aptitudeTestService = new AptitudeTestService();
 
-export interface RunCodeRequest {
-    sessionToken: string;
-    questionId: number;
-    language: 'javascript' | 'python' | 'java' | 'cpp';
-    code: string;
-    testCaseIndex?: number;
-}
+// Export individual functions for backward compatibility
+export const startCodingTest = (params: Parameters<typeof codingTestService.startTest>[0]) => 
+  codingTestService.startTest(params);
 
-export interface AptitudeQuestion {
-    id: number;
-    questionNumber: number;
-    question: string;
-    type: 'MCQ' | 'MSQ' | 'NAT' | 'TRUE_FALSE';
-    subject: string;
-    topic?: string;
-    difficulty: 'Easy' | 'Medium' | 'Hard';
-    marks: number;
-    negativeMarks: number;
-    options?: {
-        key: string;
-        text: string;
-    }[];
-}
+export const runCodingTest = (params: Parameters<typeof codingTestService.runCode>[0]) => 
+  codingTestService.runCode(params);
 
-export interface CodingQuestion {
-    id: number;
-    questionNumber: number;
-    question: string;
-    description: string;
-    difficulty: 'Easy' | 'Medium' | 'Hard';
-    testCases: {
-        id: number;
-        input: string;
-        expectedOutput: string;
-        isHidden: boolean;
-    }[];
-}
+export const submitCodingTest = (params: Parameters<typeof codingTestService.submitCode>[0]) => 
+  codingTestService.submitCode(params);
 
-export interface TestSession {
-    sessionToken: string;
-    sessionId: number;
-    duration: number;
-    totalQuestions: number;
-    startTime: string;
-}
+export const autoSaveCodingTest = (params: Parameters<typeof codingTestService.autoSave>[0]) => 
+  codingTestService.autoSave(params);
 
-export interface SessionStatus {
-    sessionToken: string;
-    status: string;
-    timeRemaining: number;
-    totalQuestions: number;
-    answeredQuestions?: number;
-    submittedQuestions?: number;
-    reviewedQuestions?: number;
-    currentScore: number;
-    startTime: string;
-    endTime?: string;
-}
+export const getCodingQuestion = (sessionToken: string, questionId: number) => 
+  codingTestService.getCurrentQuestion(sessionToken, questionId);
 
-class TestService {
-    private apiClient = axios.create({
-        baseURL: API_BASE_URL,
-        timeout: 30000,
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    });
+export const getCodingSessionStatus = (sessionToken: string) => 
+  codingTestService.getSessionStatus(sessionToken);
 
-    constructor() {
-        // Add request interceptor for error handling
-        this.apiClient.interceptors.request.use(
-            (config) => {
-                console.log(`Making ${config.method?.toUpperCase()} request to ${config.url}`);
-                return config;
-            },
-            (error) => {
-                console.error('Request error:', error);
-                return Promise.reject(error);
-            }
-        );
+export const endCodingTest = (sessionToken: string) => 
+  codingTestService.endTest(sessionToken);
 
-        // Add response interceptor for error handling
-        this.apiClient.interceptors.response.use(
-            (response) => {
-                return response;
-            },
-            (error) => {
-                console.error('Response error:', error);
-                if (error.response?.status === 401) {
-                    // Handle unauthorized access
-                    console.error('Unauthorized access - redirecting to login');
-                }
-                return Promise.reject(error);
-            }
-        );
-    }
+// Export individual aptitude functions for backward compatibility
+export const startAptitudeTest = (params: Parameters<typeof aptitudeTestService.startTest>[0]) => 
+  aptitudeTestService.startTest(params);
 
-    // Aptitude Test Methods
-    async startAptitudeTest(request: StartAptitudeTestRequest): Promise<{ 
-        success: boolean; 
-        data: TestSession & { questions: AptitudeQuestion[] }; 
-        message: string 
-    }> {
-        try {
-            const response = await this.apiClient.post('/aptitude/start', request);
-            return response.data;
-        } catch (error: any) {
-            throw new Error(error.response?.data?.message || 'Failed to start aptitude test');
-        }
-    }
+export const submitAptitudeAnswer = (params: Parameters<typeof aptitudeTestService.submitAnswer>[0]) => 
+  aptitudeTestService.submitAnswer(params);
 
-    async submitAptitudeAnswer(request: SubmitAptitudeAnswerRequest): Promise<{
-        success: boolean;
-        data: {
-            isCorrect: boolean;
-            marksObtained: number;
-            questionId: number;
-            submitted: boolean;
-        };
-        message: string;
-    }> {
-        try {
-            const response = await this.apiClient.post('/aptitude/submit-answer', request);
-            return response.data;
-        } catch (error: any) {
-            throw new Error(error.response?.data?.message || 'Failed to submit answer');
-        }
-    }
+export const markAptitudeQuestionForReview = (sessionToken: string, questionId: number, isReviewed: boolean) => 
+  aptitudeTestService.markForReview(sessionToken, questionId, isReviewed);
 
-    async markAptitudeQuestionForReview(sessionToken: string, questionId: number, isReviewed: boolean = true): Promise<{
-        success: boolean;
-        data: { questionId: number; isReviewed: boolean };
-        message: string;
-    }> {
-        try {
-            const response = await this.apiClient.post('/aptitude/mark-review', {
-                sessionToken,
-                questionId,
-                isReviewed
-            });
-            return response.data;
-        } catch (error: any) {
-            throw new Error(error.response?.data?.message || 'Failed to mark question for review');
-        }
-    }
+export const getAptitudeSessionStatus = (sessionToken: string) => 
+  aptitudeTestService.getSessionStatus(sessionToken);
 
-    async getAptitudeSessionStatus(sessionToken: string): Promise<{
-        success: boolean;
-        data: SessionStatus;
-    }> {
-        try {
-            const response = await this.apiClient.get(`/aptitude/session/${sessionToken}`);
-            return response.data;
-        } catch (error: any) {
-            throw new Error(error.response?.data?.message || 'Failed to get session status');
-        }
-    }
+export const endAptitudeTest = (sessionToken: string) => 
+  aptitudeTestService.endTest(sessionToken);
 
-    async endAptitudeTest(sessionToken: string): Promise<{
-        success: boolean;
-        data: {
-            sessionId: number;
-            totalQuestions: number;
-            attemptedQuestions: number;
-            correctAnswers: number;
-            incorrectAnswers: number;
-            unattempted: number;
-            totalMarks: number;
-            percentage: number;
-            timeTaken: number;
-            subjectWiseResults: Record<string, any>;
-            startTime: string;
-            endTime: string;
-        };
-        message: string;
-    }> {
-        try {
-            const response = await this.apiClient.post('/aptitude/end', { sessionToken });
-            return response.data;
-        } catch (error: any) {
-            throw new Error(error.response?.data?.message || 'Failed to end aptitude test');
-        }
-    }
+export const getAptitudeSubjects = () => 
+  aptitudeTestService.getSubjects();
 
-    async getAptitudeSubjects(): Promise<{
-        success: boolean;
-        data: { subject: string; questionCount: number }[];
-    }> {
-        try {
-            const response = await this.apiClient.get('/aptitude/subjects');
-            return response.data;
-        } catch (error: any) {
-            throw new Error(error.response?.data?.message || 'Failed to get subjects');
-        }
-    }
+// Combined service object
+const testService = {
+  // Coding test methods
+  startCodingTest: codingTestService.startTest.bind(codingTestService),
+  runCode: codingTestService.runCode.bind(codingTestService),
+  submitCode: codingTestService.submitCode.bind(codingTestService),
+  autoSave: codingTestService.autoSave.bind(codingTestService),
+  getCurrentQuestion: codingTestService.getCurrentQuestion.bind(codingTestService),
+  getSessionStatus: codingTestService.getSessionStatus.bind(codingTestService),
+  endTest: codingTestService.endTest.bind(codingTestService),
+  validateSession: codingTestService.validateSession.bind(codingTestService),
+  getTimeRemaining: codingTestService.getTimeRemaining.bind(codingTestService),
 
-    // Coding Test Methods
-    async startCodingTest(request: StartCodingTestRequest): Promise<{
-        success: boolean;
-        data: TestSession & { 
-            questions: CodingQuestion[];
-            supportedLanguages: string[];
-        };
-        message: string;
-    }> {
-        try {
-            const response = await this.apiClient.post('/coding/start', request);
-            return response.data;
-        } catch (error: any) {
-            throw new Error(error.response?.data?.message || 'Failed to start coding test');
-        }
-    }
+  // Aptitude test methods
+  startAptitudeTest: aptitudeTestService.startTest.bind(aptitudeTestService),
+  submitAptitudeAnswer: aptitudeTestService.submitAnswer.bind(aptitudeTestService),
+  markAptitudeQuestionForReview: aptitudeTestService.markForReview.bind(aptitudeTestService),
+  getAptitudeSessionStatus: aptitudeTestService.getSessionStatus.bind(aptitudeTestService),
+  endAptitudeTest: aptitudeTestService.endTest.bind(aptitudeTestService),
+  getSubjects: aptitudeTestService.getSubjects.bind(aptitudeTestService)
+};
 
-    async runCode(request: RunCodeRequest): Promise<{
-        success: boolean;
-        data: {
-            results: Array<{
-                input: string;
-                expectedOutput: string;
-                actualOutput: string;
-                passed: boolean;
-                error?: string;
-                runtime: string;
-                memory: string;
-            }>;
-            summary: {
-                total: number;
-                passed: number;
-                failed: number;
-            };
-        };
-        message: string;
-    }> {
-        try {
-            const response = await this.apiClient.post('/coding/run', request);
-            return response.data;
-        } catch (error: any) {
-            throw new Error(error.response?.data?.message || 'Failed to run code');
-        }
-    }
-
-    async submitCode(request: SubmitCodeRequest): Promise<{
-        success: boolean;
-        data: {
-            questionId: number;
-            testCasesPassed: number;
-            totalTestCases: number;
-            marksObtained: number;
-            compilationStatus: string;
-            submitted: boolean;
-            errorMessage?: string;
-        };
-        message: string;
-    }> {
-        try {
-            const response = await this.apiClient.post('/coding/submit', request);
-            return response.data;
-        } catch (error: any) {
-            throw new Error(error.response?.data?.message || 'Failed to submit code');
-        }
-    }
-
-    async getCodingSessionStatus(sessionToken: string): Promise<{
-        success: boolean;
-        data: SessionStatus & { submittedQuestions: number };
-    }> {
-        try {
-            const response = await this.apiClient.get(`/coding/session/${sessionToken}`);
-            return response.data;
-        } catch (error: any) {
-            throw new Error(error.response?.data?.message || 'Failed to get coding session status');
-        }
-    }
-
-    async endCodingTest(sessionToken: string): Promise<{
-        success: boolean;
-        data: {
-            sessionId: number;
-            totalQuestions: number;
-            attemptedQuestions: number;
-            fullyCorrect: number;
-            partiallyCorrect: number;
-            incorrect: number;
-            unattempted: number;
-            totalMarks: number;
-            percentage: number;
-            timeTaken: number;
-            languageWiseResults: Record<string, any>;
-            startTime: string;
-            endTime: string;
-        };
-        message: string;
-    }> {
-        try {
-            const response = await this.apiClient.post('/coding/end', { sessionToken });
-            return response.data;
-        } catch (error: any) {
-            throw new Error(error.response?.data?.message || 'Failed to end coding test');
-        }
-    }
-
-    // Utility Methods
-    formatTimeRemaining(seconds: number): string {
-        if (seconds <= 0) return '00:00:00';
-        
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const remainingSeconds = seconds % 60;
-        
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-    }
-
-    calculateProgress(answered: number, total: number): number {
-        return total > 0 ? Math.round((answered / total) * 100) : 0;
-    }
-
-    isSessionActive(status: string): boolean {
-        return ['started', 'ongoing'].includes(status);
-    }
-
-    isSessionExpired(timeRemaining: number): boolean {
-        return timeRemaining <= 0;
-    }
-}
-
-// Export a singleton instance
-const testService = new TestService();
-export default testService; 
+export default testService;

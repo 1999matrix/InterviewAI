@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, CheckCircle, AlertCircle, Play, Settings } from 'lucide-react';
+import { Clock, CheckCircle, AlertCircle, Play, Settings, ArrowLeft, ArrowRight } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { codingTestService, CodingQuestion, TestResult } from '../../services/testService';
 
 // Define available programming languages
 const LANGUAGES = [
@@ -481,27 +484,145 @@ const TestCases: React.FC<TestCasesProps> = ({
 
 // Main CodingTestPage Component
 const CodingTestPage: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // Get params from location state or use defaults
+  const testParams = location.state || {};
+  
+  // State management
+  const [sessionToken, setSessionToken] = useState<string>('');
+  const [questions, setQuestions] = useState<CodingQuestion[]>([]);
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageId>('javascript');
   const [code, setCode] = useState('');
-  const [results, setResults] = useState<Array<{
-    passed: boolean;
-    output: string;
-    runtime?: string;
-    memory?: string;
-  }> | null>(null);
+  const [results, setResults] = useState<TestResult[] | null>(null);
   const [timeRemaining, setTimeRemaining] = useState(60 * 60); // 60 minutes in seconds
   const [isRunning, setIsRunning] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error' | 'loading' } | null>(null);
+  const [testStarted, setTestStarted] = useState(false);
   
-  const currentProblem = SAMPLE_PROBLEMS[currentProblemIndex];
+  const currentProblem = questions[currentProblemIndex];
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Initialize the code editor with the starter code when language changes
+  // Initialize coding test session
   useEffect(() => {
-    if (currentProblem && currentProblem.starterCode[selectedLanguage]) {
-      setCode(currentProblem.starterCode[selectedLanguage]);
+    const initializeTest = async () => {
+      try {
+        setIsInitializing(true);
+        setToast({ message: 'Initializing coding test...', type: 'loading' });
+
+        // Start the coding test session
+        const testSession = await codingTestService.startTest({
+          username: user?.name || user?.email,
+          email: user?.email,
+          difficulty: testParams.difficulty || 'Easy',
+          language: testParams.language || 'javascript',
+          duration: testParams.duration || 90,
+          questionCount: testParams.questionCount || 3
+        });
+
+        setSessionToken(testSession.sessionToken);
+        setQuestions(testSession.questions);
+        setTimeRemaining(testSession.duration * 60); // Convert minutes to seconds
+        setSelectedLanguage((testParams.language || 'javascript') as LanguageId);
+        setTestStarted(true);
+        
+        // Load first question if available
+        if (testSession.questions.length > 0) {
+          await loadQuestion(testSession.sessionToken, testSession.questions[0].id, 0);
+        }
+
+        setToast({ message: 'Coding test started successfully!', type: 'success' });
+        setTimeout(() => setToast(null), 3000);
+
+      } catch (error: any) {
+        console.error('Failed to initialize test:', error);
+        setToast({ message: error.message || 'Failed to start coding test', type: 'error' });
+        setTimeout(() => navigate('/interview/create-session'), 3000);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    if (!testStarted) {
+      initializeTest();
     }
-  }, [selectedLanguage, currentProblemIndex, currentProblem]);
+  }, [user, testParams, testStarted, navigate]);
+
+  // Load question and any saved code
+  const loadQuestion = async (token: string, questionId: number, index: number) => {
+    try {
+      const questionData = await codingTestService.getCurrentQuestion(token, questionId);
+      
+      // Update current question index
+      setCurrentProblemIndex(index);
+      
+      // Load saved code if exists
+      if (questionData.question.savedCode && questionData.question.savedLanguage) {
+        setCode(questionData.question.savedCode);
+        setSelectedLanguage(questionData.question.savedLanguage as LanguageId);
+      } else {
+        // Set starter code or empty code
+        setCode(getStarterCode(selectedLanguage, questionData.question));
+      }
+      
+      // Update session info
+      setTimeRemaining(questionData.sessionInfo.timeRemaining);
+      
+    } catch (error) {
+      console.error('Failed to load question:', error);
+      setToast({ message: 'Failed to load question', type: 'error' });
+    }
+  };
+
+  // Get starter code for a language (placeholder for now)
+  const getStarterCode = (language: LanguageId, question: CodingQuestion): string => {
+    const starterTemplates = {
+      javascript: `// ${question.question}\nfunction solution() {\n    // Your code here\n    \n}`,
+      python: `# ${question.question}\ndef solution():\n    # Your code here\n    pass`,
+      java: `// ${question.question}\npublic class Solution {\n    public void solution() {\n        // Your code here\n        \n    }\n}`,
+      cpp: `// ${question.question}\n#include <iostream>\nusing namespace std;\n\nint main() {\n    // Your code here\n    \n    return 0;\n}`
+    };
+    
+    return starterTemplates[language] || '';
+  };
+
+  // Auto-save functionality
+  useEffect(() => {
+    if (sessionToken && currentProblem && code.trim() && !isAutoSaving) {
+      // Clear previous timer
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+      
+      // Set new timer for auto-save
+      autoSaveTimerRef.current = setTimeout(async () => {
+        try {
+          setIsAutoSaving(true);
+          await codingTestService.autoSave({
+            sessionToken,
+            questionId: currentProblem.id,
+            language: selectedLanguage,
+            code
+          });
+        } catch (error) {
+          console.error('Auto-save failed:', error);
+        } finally {
+          setIsAutoSaving(false);
+        }
+      }, 2000); // Auto-save after 2 seconds of inactivity
+    }
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [code, sessionToken, currentProblem, selectedLanguage, isAutoSaving]);
   
   // Timer logic
   useEffect(() => {
@@ -528,72 +649,164 @@ const CodingTestPage: React.FC = () => {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
-  // Mock execution of code
-  const handleRunCode = () => {
+  // Real execution of code
+  const handleRunCode = async () => {
+    if (!sessionToken || !currentProblem) {
+      setToast({ message: 'No active session or question found', type: 'error' });
+      return;
+    }
+
     setIsRunning(true);
     setToast({ message: 'Running your code...', type: 'loading' });
     
-    // Simulate API call with a timeout
-    setTimeout(() => {
-      const testResults = currentProblem.testCases.map((testCase, index) => {
-        // Mock evaluation - in a real app, this would call an API
-        const passed = index !== 1; // For demo, make the second test case fail
-        return {
-          passed,
-          output: passed ? testCase.expected : 'null',
-          runtime: `${Math.floor(Math.random() * 10) + 1}ms`,
-          memory: `${Math.floor(Math.random() * 10) + 30}MB`
-        };
+    try {
+      const runResult = await codingTestService.runCode({
+        sessionToken,
+        questionId: currentProblem.id,
+        language: selectedLanguage,
+        code
       });
+
+      if (runResult.success && runResult.data) {
+        setResults(runResult.data.results);
+        setToast({ 
+          message: `Code executed! ${runResult.data.summary.passed}/${runResult.data.summary.total} test cases passed`, 
+          type: runResult.data.summary.passed === runResult.data.summary.total ? 'success' : 'info'
+        });
+      } else {
+        setToast({ message: runResult.message || 'Code execution failed', type: 'error' });
+      }
       
-      setResults(testResults);
-      setIsRunning(false);
-      setToast({ message: 'Code execution completed!', type: 'success' });
       setTimeout(() => setToast(null), 3000);
-    }, 2000);
+    } catch (error: any) {
+      console.error('Code execution error:', error);
+      setToast({ message: error.message || 'Code execution failed', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setIsRunning(false);
+    }
   };
   
   // Handle submission
-  const handleSubmitCode = () => {
+  const handleSubmitCode = async () => {
+    if (!sessionToken || !currentProblem) {
+      setToast({ message: 'No active session or question found', type: 'error' });
+      return;
+    }
+
     setIsRunning(true);
     setToast({ message: 'Submitting your solution...', type: 'loading' });
     
-    // Simulate API call with a timeout
-    setTimeout(() => {
-      const allTestsPassed = Math.random() > 0.3; // 70% chance of success for demo
-      
-      if (allTestsPassed) {
-        setToast({ message: 'All tests passed! Moving to next problem.', type: 'success' });
+    try {
+      const submitResult = await codingTestService.submitCode({
+        sessionToken,
+        questionId: currentProblem.id,
+        language: selectedLanguage,
+        code,
+        timeSpent: Math.floor((Date.now() - timeRemaining * 1000) / 1000) // Calculate time spent
+      });
+
+      if (submitResult.success && submitResult.data) {
+        const { testCasesPassed, totalTestCases, marksObtained, compilationStatus } = submitResult.data;
         
-        // Move to next problem if available
-        setTimeout(() => {
-          if (currentProblemIndex < SAMPLE_PROBLEMS.length - 1) {
-            setCurrentProblemIndex(prev => prev + 1);
-            setResults(null);
-          } else {
-            setToast({ message: 'Congratulations! You completed all problems!', type: 'success' });
-          }
-        }, 2000);
+        if (compilationStatus === 'success' && testCasesPassed === totalTestCases) {
+          setToast({ message: `All tests passed! Score: ${marksObtained} marks`, type: 'success' });
+          
+          // Move to next problem if available
+          setTimeout(async () => {
+            if (currentProblemIndex < questions.length - 1) {
+              const nextQuestionIndex = currentProblemIndex + 1;
+              const nextQuestion = questions[nextQuestionIndex];
+              await loadQuestion(sessionToken, nextQuestion.id, nextQuestionIndex);
+              setResults(null);
+            } else {
+              // End test if all questions completed
+              try {
+                const finalResults = await codingTestService.endTest(sessionToken);
+                setToast({ message: 'Congratulations! Test completed!', type: 'success' });
+                
+                // Navigate to results page
+                setTimeout(() => {
+                  navigate('/interview/results', { state: { results: finalResults } });
+                }, 2000);
+              } catch (error) {
+                console.error('Failed to end test:', error);
+              }
+            }
+          }, 2000);
+        } else {
+          setToast({ 
+            message: `${testCasesPassed}/${totalTestCases} test cases passed. Score: ${marksObtained} marks`, 
+            type: 'error' 
+          });
+          
+          // Run code to show test results
+          handleRunCode();
+        }
       } else {
-        setToast({ message: 'Some tests failed. Please fix your solution.', type: 'error' });
-        
-        // Generate mock results with some failures
-        const testResults = currentProblem.testCases.map((testCase, index) => {
-          const passed = index !== 1; // For demo, make the second test case fail
-          return {
-            passed,
-            output: passed ? testCase.expected : 'null',
-            runtime: `${Math.floor(Math.random() * 10) + 1}ms`,
-            memory: `${Math.floor(Math.random() * 10) + 30}MB`
-          };
-        });
-        
-        setResults(testResults);
+        setToast({ message: submitResult.message || 'Submission failed', type: 'error' });
       }
       
+      setTimeout(() => setToast(null), 5000);
+    } catch (error: any) {
+      console.error('Submission error:', error);
+      setToast({ message: error.message || 'Submission failed', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+    } finally {
       setIsRunning(false);
-    }, 3000);
+    }
   };
+
+  // Handle language change
+  const handleLanguageChange = async (newLanguage: LanguageId) => {
+    setSelectedLanguage(newLanguage);
+    
+    // Load saved code for this language if exists
+    if (sessionToken && currentProblem) {
+      try {
+        const questionData = await codingTestService.getCurrentQuestion(sessionToken, currentProblem.id);
+        if (questionData.question.savedCode && questionData.question.savedLanguage === newLanguage) {
+          setCode(questionData.question.savedCode);
+        } else {
+          setCode(getStarterCode(newLanguage, currentProblem));
+        }
+      } catch (error) {
+        console.error('Failed to load saved code:', error);
+        setCode(getStarterCode(newLanguage, currentProblem));
+      }
+    }
+  };
+
+  // Navigation functions
+  const goToPreviousQuestion = async () => {
+    if (currentProblemIndex > 0 && sessionToken) {
+      const prevIndex = currentProblemIndex - 1;
+      const prevQuestion = questions[prevIndex];
+      await loadQuestion(sessionToken, prevQuestion.id, prevIndex);
+      setResults(null);
+    }
+  };
+
+  const goToNextQuestion = async () => {
+    if (currentProblemIndex < questions.length - 1 && sessionToken) {
+      const nextIndex = currentProblemIndex + 1;
+      const nextQuestion = questions[nextIndex];
+      await loadQuestion(sessionToken, nextQuestion.id, nextIndex);
+      setResults(null);
+    }
+  };
+
+  // Early return for loading state
+  if (isInitializing || !currentProblem) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">{isInitializing ? 'Initializing coding test...' : 'Loading question...'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -613,8 +826,11 @@ const CodingTestPage: React.FC = () => {
             <div>
               <h1 className="text-xl font-semibold text-stone-900">Coding Interview Assessment</h1>
               <p className="text-stone-700 text-sm">
-                Problem {currentProblemIndex + 1}/{SAMPLE_PROBLEMS.length} - {currentProblem.title}
+                Problem {currentProblemIndex + 1}/{questions.length} - {currentProblem.question}
               </p>
+              {isAutoSaving && (
+                <p className="text-xs text-blue-600">Auto-saving...</p>
+              )}
             </div>
             
             <div className="flex items-center space-x-4">
@@ -630,7 +846,7 @@ const CodingTestPage: React.FC = () => {
               
               <select
                 value={selectedLanguage}
-                onChange={(e) => setSelectedLanguage(e.target.value as LanguageId)}
+                onChange={(e) => handleLanguageChange(e.target.value as LanguageId)}
                 className="bg-gray-200 border border-gray-500 text-stone-900 rounded-md py-1 px-3 text-sm"
               >
                 {LANGUAGES.map(lang => (
@@ -657,15 +873,40 @@ const CodingTestPage: React.FC = () => {
           <div className="col-span-12 lg:col-span-5 space-y-6">
             <div className="bg-white rounded-xl shadow-sm p-6 border">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">{currentProblem.title}</h2>
-                <span className={`
-                  text-sm font-medium px-2 py-1 rounded-full
-                  ${currentProblem.difficulty === 'Easy' ? 'bg-green-100 text-green-800' :
-                    currentProblem.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'}
-                `}>
-                  {currentProblem.difficulty}
-                </span>
+                <div className="flex items-center gap-4">
+                  <h2 className="text-xl font-bold">{currentProblem.question}</h2>
+                  <span className={`
+                    text-sm font-medium px-2 py-1 rounded-full
+                    ${currentProblem.difficulty === 'Easy' ? 'bg-green-100 text-green-800' :
+                      currentProblem.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'}
+                  `}>
+                    {currentProblem.difficulty}
+                  </span>
+                </div>
+                
+                {/* Navigation buttons */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={goToPreviousQuestion}
+                    disabled={currentProblemIndex === 0}
+                    className="text-sm py-1 px-2"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="text-sm text-gray-500">
+                    {currentProblemIndex + 1} / {questions.length}
+                  </span>
+                  <Button
+                    variant="outline"
+                    onClick={goToNextQuestion}
+                    disabled={currentProblemIndex === questions.length - 1}
+                    className="text-sm py-1 px-2"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
               
               <div className="prose max-w-none">
@@ -673,39 +914,29 @@ const CodingTestPage: React.FC = () => {
                   {currentProblem.description}
                 </p>
                 
-                <h3 className="text-lg font-semibold mt-6 mb-3">Examples:</h3>
-                {currentProblem.examples.map((example, index) => (
+                {/* We'll show test cases as examples since the structure is different */}
+                <h3 className="text-lg font-semibold mt-6 mb-3">Sample Test Cases:</h3>
+                {currentProblem.testCases.slice(0, 2).map((testCase, index) => (
                   <div key={index} className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
                     <div className="mb-2">
-                      <span className="font-bold text-sm">Example {index + 1}:</span>
+                      <span className="font-bold text-sm">Test Case {index + 1}:</span>
                     </div>
                     <div className="space-y-2">
                       <div>
                         <div className="text-xs text-gray-500">Input:</div>
-                        <div className="font-mono text-sm">{example.input}</div>
+                        <div className="font-mono text-sm bg-white p-2 rounded border">
+                          {testCase.input}
+                        </div>
                       </div>
                       <div>
-                        <div className="text-xs text-gray-500">Output:</div>
-                        <div className="font-mono text-sm">{example.output}</div>
-                      </div>
-                      {example.explanation && (
-                        <div>
-                          <div className="text-xs text-gray-500">Explanation:</div>
-                          <div className="text-sm">{example.explanation}</div>
+                        <div className="text-xs text-gray-500">Expected Output:</div>
+                        <div className="font-mono text-sm bg-white p-2 rounded border">
+                          {testCase.expectedOutput}
                         </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 ))}
-                
-                <h3 className="text-lg font-semibold mt-6 mb-3">Constraints:</h3>
-                <ul className="list-disc pl-5 space-y-1">
-                  {currentProblem.constraints.map((constraint, index) => (
-                    <li key={index} className="text-gray-700 font-mono text-sm">
-                      {constraint}
-                    </li>
-                  ))}
-                </ul>
               </div>
             </div>
           </div>

@@ -23,6 +23,7 @@ import ProfilePage from '../pages/interview/ProfilePage';
 import ResumeAnalyzerPage from '../pages/resume/ResumeAnalyzerPage';
 import CodingTestPage from '../pages/interview/CodingTestPage';
 import AptitudeTestPage from '../pages/interview/AptitudeTestPage';
+import CodingTestResultsPage from '../pages/interview/CodingTestResultsPage';
 import KeycloakTestPage from '../pages/KeycloakTestPage';
 import Scheduler from '../pages/user/Scheduler';
 import Profile from '../pages/user/Profile';
@@ -85,6 +86,11 @@ const AppRoutes: React.FC = () => {
         <Route path="/interview/aptitude-test" element={
           // <ProtectedRoute>
             <AptitudeTestPage />
+          // </ProtectedRoute>
+        } />
+        <Route path="/interview/results" element={
+          // <ProtectedRoute>
+            <CodingTestResultsPage />
           // </ProtectedRoute>
         } />
         {/* <Route path="/interview/schedule" element={

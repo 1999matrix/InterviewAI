@@ -358,7 +358,7 @@ const InterviewPage: React.FC = () => {
       
       const response = await getNextQuestionComp2(
         interviewState.user,
-        responseText || ''
+        responseText || 'user has givine no response'
       );
       
       if (response.data.status === 'completed') {

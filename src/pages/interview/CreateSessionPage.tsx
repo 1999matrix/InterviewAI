@@ -390,7 +390,14 @@ const CreateSessionPage: React.FC = () => {
                 type="button"
                 onClick={() => {
                   if (formData.interviewMode === 'coding-test') {
-                    navigate('/interview/coding-test');
+                    navigate('/interview/coding-test', {
+                      state: {
+                        difficulty: 'Easy',
+                        language: 'javascript',
+                        duration: 90,
+                        questionCount: 3
+                      }
+                    });
                   } else if (formData.interviewMode === 'aptitude-test') {
                     navigate('/interview/aptitude-test');
                   } else if (formData.interviewMode) {
