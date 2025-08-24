@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import KeycloakService from '../services/keycloak';
+// import KeycloakService from '../services/keycloak'; // Commented out for traditional auth
 
 interface User {
   id: string;
@@ -42,47 +42,50 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [initializationAttempted, setInitializationAttempted] = useState(false);
+  // const [initializationAttempted, setInitializationAttempted] = useState(false);
   
   useEffect(() => {
-    // Prevent multiple initialization attempts
-    if (!initializationAttempted) {
-      setInitializationAttempted(true);
-      initializeKeycloak();
-    }
-  }, [initializationAttempted]);
+    // Traditional auth initialization - commented out Keycloak
+    // if (!initializationAttempted) {
+    //   setInitializationAttempted(true);
+    //   initializeKeycloak();
+    // }
+    setIsLoading(false); // Set loading to false since we're not using Keycloak
+  }, []);
   
-  const initializeKeycloak = async () => {
-    try {
-      setIsLoading(true);
-      const authenticated = await KeycloakService.init();
+  // Commented out Keycloak methods
+  // const initializeKeycloak = async () => {
+  //   try {
+  //     setIsLoading(true);
+  //     const authenticated = await KeycloakService.init();
       
-      if (authenticated) {
-        await loadUserProfile();
-        setIsAuthenticated(true);
-      }
-    } catch (error) {
-      console.error('Keycloak initialization error:', error);
-      setInitializationAttempted(false); // Allow retry on error
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //     if (authenticated) {
+  //       await loadUserProfile();
+  //       setIsAuthenticated(true);
+  //     }
+  //   } catch (error) {
+  //     console.error('Keycloak initialization error:', error);
+  //     setInitializationAttempted(false); // Allow retry on error
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
   
-  const loadUserProfile = async () => {
-    try {
-      const userInfo = KeycloakService.getUserInfo();
-      if (userInfo) {
-        setUser(userInfo);
-      }
-    } catch (error) {
-      console.error('Failed to load user profile:', error);
-    }
-  };
+  // const loadUserProfile = async () => {
+  //   try {
+  //     const userInfo = KeycloakService.getUserInfo();
+  //     if (userInfo) {
+  //       setUser(userInfo);
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to load user profile:', error);
+  //   }
+  // };
   
   const login = async () => {
     try {
-      await KeycloakService.login();
+      // Redirect to login page for traditional auth
+      window.location.href = '/login';
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
@@ -91,7 +94,8 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   
   const register = async () => {
     try {
-      await KeycloakService.register();
+      // Redirect to register page for traditional auth
+      window.location.href = '/signup';
     } catch (error) {
       console.error('Registration failed:', error);
       throw error;
@@ -102,7 +106,8 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     try {
       setUser(null);
       setIsAuthenticated(false);
-      await KeycloakService.logout();
+      // Traditional logout - will be handled by TraditionalAuthContext
+      window.location.href = '/login';
     } catch (error) {
       console.error('Logout failed:', error);
       throw error;
@@ -110,20 +115,24 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   };
   
   const hasRole = (role: string) => {
-    return KeycloakService.hasRole(role);
+    // Simple role check for traditional auth
+    return user?.roles?.includes(role) || false;
   };
   
   const hasResourceRole = (role: string, resource: string) => {
-    return KeycloakService.hasResourceRole(role, resource);
+    // Simple resource role check for traditional auth
+    return user?.roles?.includes(role) || false;
   };
   
   const getToken = () => {
-    return KeycloakService.getToken();
+    // Return undefined for traditional auth (session-based)
+    return undefined;
   };
   
   const updateToken = async (minValidity = 30) => {
     try {
-      return await KeycloakService.updateToken(minValidity);
+      // No token refresh needed for session-based auth
+      return false;
     } catch (error) {
       console.error('Token update failed:', error);
       throw error;
@@ -131,7 +140,8 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   };
   
   const accountManagement = () => {
-    KeycloakService.accountManagement();
+    // Redirect to profile page for traditional auth
+    window.location.href = '/profile';
   };
   
   return (

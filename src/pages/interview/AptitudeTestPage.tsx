@@ -229,7 +229,7 @@ const AptitudeTestPage: React.FC = () => {
     }
   };
 
-  // Navigation functions
+  // Navigation functions 
   const goToQuestion = (index: number) => {
     if (index >= 0 && index < questions.length) {
       // Update time spent on current question

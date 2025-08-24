@@ -13,6 +13,8 @@ import DemoPage from '../pages/DemoPage';
 import PricingPage from '../pages/PricingPage';
 import LoginPage from '../pages/auth/LoginPage';
 import SignupPage from '../pages/auth/SignupPage';
+import TraditionalLoginPage from '../pages/auth/TraditionalLoginPage';
+import TraditionalSignupPage from '../pages/auth/TraditionalSignupPage';
 import UnauthorizedPage from '../pages/auth/UnauthorizedPage';
 
 // Private Pages
@@ -39,6 +41,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/traditional-login" element={<TraditionalLoginPage />} />
+        <Route path="/traditional-signup" element={<TraditionalSignupPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
         <Route path="/keycloak-test" element={<KeycloakTestPage />} />
       </Route>
