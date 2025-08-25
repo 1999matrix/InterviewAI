@@ -1,27 +1,21 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-// import KeycloakService from '../services/keycloak'; // Commented out for traditional auth
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  username: string;
-  roles: string[];
-  groups: string[];
-}
+import AuthService, { User, LoginCredentials, RegisterData } from '../services/authService';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: () => Promise<void>;
-  register: () => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  loginWithLinkedIn: () => Promise<void>;
   hasRole: (role: string) => boolean;
   hasResourceRole: (role: string, resource: string) => boolean;
   getToken: () => string | undefined;
   updateToken: (minValidity?: number) => Promise<boolean>;
   accountManagement: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -31,117 +25,210 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   register: async () => {},
   logout: async () => {},
+  loginWithGoogle: async () => {},
+  loginWithLinkedIn: async () => {},
   hasRole: () => false,
   hasResourceRole: () => false,
   getToken: () => undefined,
   updateToken: async () => false,
   accountManagement: () => {},
+  refreshUser: async () => {},
 });
 
 const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  // const [initializationAttempted, setInitializationAttempted] = useState(false);
+  const [initializationAttempted, setInitializationAttempted] = useState(false);
   
   useEffect(() => {
-    // Traditional auth initialization - commented out Keycloak
-    // if (!initializationAttempted) {
-    //   setInitializationAttempted(true);
-    //   initializeKeycloak();
-    // }
-    setIsLoading(false); // Set loading to false since we're not using Keycloak
+    // Prevent multiple initialization attempts
+    if (!initializationAttempted) {
+      setInitializationAttempted(true);
+      initializeAuth();
+    }
+  }, [initializationAttempted]);
+
+  // Check for OAuth callback in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const userData = urlParams.get('user');
+    const error = urlParams.get('error');
+    
+    if (error) {
+      console.error('OAuth authentication failed:', error);
+      // Remove error param from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+      return;
+    }
+    
+    if (token && userData) {
+      try {
+        const parsedUser = JSON.parse(decodeURIComponent(userData));
+        AuthService.handleOAuthCallback(token, parsedUser);
+        
+        // Remove OAuth params from URL
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+        
+        // Reload auth state
+        loadUserProfile();
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('OAuth callback handling failed:', error);
+      }
+    }
   }, []);
   
-  // Commented out Keycloak methods
-  // const initializeKeycloak = async () => {
-  //   try {
-  //     setIsLoading(true);
-  //     const authenticated = await KeycloakService.init();
-      
-  //     if (authenticated) {
-  //       await loadUserProfile();
-  //       setIsAuthenticated(true);
-  //     }
-  //   } catch (error) {
-  //     console.error('Keycloak initialization error:', error);
-  //     setInitializationAttempted(false); // Allow retry on error
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-  
-  // const loadUserProfile = async () => {
-  //   try {
-  //     const userInfo = KeycloakService.getUserInfo();
-  //     if (userInfo) {
-  //       setUser(userInfo);
-  //     }
-  //   } catch (error) {
-  //     console.error('Failed to load user profile:', error);
-  //   }
-  // };
-  
-  const login = async () => {
+  const initializeAuth = async () => {
     try {
-      // Redirect to login page for traditional auth
-      window.location.href = '/login';
+      setIsLoading(true);
+      const authenticated = await AuthService.init();
+      
+      if (authenticated) {
+        await loadUserProfile();
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+      }
     } catch (error) {
-      console.error('Login failed:', error);
-      throw error;
+      console.error('Auth initialization error:', error);
+      setInitializationAttempted(false); // Allow retry on error
+      setIsAuthenticated(false);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
     }
   };
   
-  const register = async () => {
+  const loadUserProfile = async () => {
     try {
-      // Redirect to register page for traditional auth
-      window.location.href = '/signup';
+      const userInfo = AuthService.getUserInfo();
+      if (userInfo) {
+        setUser(userInfo);
+        setIsAuthenticated(true);
+      } else {
+        // Try to fetch fresh user data
+        const freshUser = await AuthService.getCurrentUser();
+        setUser(freshUser);
+        setIsAuthenticated(true);
+      }
+    } catch (error) {
+      console.error('Failed to load user profile:', error);
+      setIsAuthenticated(false);
+      setUser(null);
+    }
+  };
+  
+  const login = async (credentials: LoginCredentials) => {
+    try {
+      setIsLoading(true);
+      const response = await AuthService.login(credentials);
+      
+      if (response.success) {
+        setUser(response.data.user);
+        setIsAuthenticated(true);
+      } else {
+        throw new Error(response.message || 'Login failed');
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const register = async (userData: RegisterData) => {
+    try {
+      setIsLoading(true);
+      const response = await AuthService.register(userData);
+      
+      if (response.success) {
+        setUser(response.data.user);
+        setIsAuthenticated(true);
+      } else {
+        throw new Error(response.message || 'Registration failed');
+      }
     } catch (error) {
       console.error('Registration failed:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    try {
+      await AuthService.loginWithGoogle();
+    } catch (error) {
+      console.error('Google login failed:', error);
+      throw error;
+    }
+  };
+
+  const loginWithLinkedIn = async () => {
+    try {
+      await AuthService.loginWithLinkedIn();
+    } catch (error) {
+      console.error('LinkedIn login failed:', error);
       throw error;
     }
   };
   
   const logout = async () => {
     try {
+      setIsLoading(true);
+      await AuthService.logout();
       setUser(null);
       setIsAuthenticated(false);
-      // Traditional logout - will be handled by TraditionalAuthContext
-      window.location.href = '/login';
     } catch (error) {
       console.error('Logout failed:', error);
-      throw error;
+      // Even if logout fails on backend, clear local state
+      setUser(null);
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const refreshUser = async () => {
+    try {
+      const freshUser = await AuthService.getCurrentUser();
+      setUser(freshUser);
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+      // If refresh fails, user might be logged out
+      await logout();
     }
   };
   
   const hasRole = (role: string) => {
-    // Simple role check for traditional auth
-    return user?.roles?.includes(role) || false;
+    return AuthService.hasRole(role);
   };
   
   const hasResourceRole = (role: string, resource: string) => {
-    // Simple resource role check for traditional auth
-    return user?.roles?.includes(role) || false;
+    return AuthService.hasResourceRole(role, resource);
   };
   
   const getToken = () => {
-    // Return undefined for traditional auth (session-based)
-    return undefined;
+    return AuthService.getToken();
   };
   
   const updateToken = async (minValidity = 30) => {
     try {
-      // No token refresh needed for session-based auth
-      return false;
+      return await AuthService.updateToken(minValidity);
     } catch (error) {
       console.error('Token update failed:', error);
-      throw error;
+      return false;
     }
   };
   
   const accountManagement = () => {
-    // Redirect to profile page for traditional auth
-    window.location.href = '/profile';
+    AuthService.accountManagement();
   };
   
   return (
@@ -152,11 +239,14 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       login,
       register,
       logout,
+      loginWithGoogle,
+      loginWithLinkedIn,
       hasRole,
       hasResourceRole,
       getToken,
       updateToken,
       accountManagement,
+      refreshUser,
     }}>
       {children}
     </AuthContext.Provider>

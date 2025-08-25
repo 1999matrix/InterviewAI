@@ -1,21 +1,19 @@
 import axios, { AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
-import KeycloakService from './keycloak';
+// HTTP Interceptor for authentication
+import AuthService from './authService';
 
 // Create axios instance
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:7777/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/v1',
   timeout: 10000,
 });
 
 // Request interceptor to add token
 apiClient.interceptors.request.use(
-  async (config: InternalAxiosRequestConfig) => {
+  (config: InternalAxiosRequestConfig) => {
     try {
-      // Check if token needs refresh
-      await KeycloakService.updateToken(30);
-      
-      // Get current token
-      const token = KeycloakService.getToken();
+      // Get current token from AuthService
+      const token = AuthService.getToken();
       
       // Add token to headers if available
       if (token && config.headers) {
@@ -24,7 +22,7 @@ apiClient.interceptors.request.use(
       
       return config;
     } catch (error) {
-      console.error('Failed to update token in request interceptor:', error);
+      console.error('Failed to add token in request interceptor:', error);
       return config;
     }
   },
@@ -47,22 +45,28 @@ apiClient.interceptors.response.use(
       
       try {
         // Try to refresh token
-        await KeycloakService.updateToken(0);
+        const refreshed = await AuthService.updateToken(0);
         
-        // Get new token
-        const newToken = KeycloakService.getToken();
-        
-        if (newToken && originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        if (refreshed) {
+          // Get new token
+          const newToken = AuthService.getToken();
           
-          // Retry the original request
-          return apiClient(originalRequest);
+          if (newToken && originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            
+            // Retry the original request
+            return apiClient(originalRequest);
+          }
         }
+        
+        // If refresh failed, redirect to login
+        window.location.href = '/login';
+        return Promise.reject(new Error('Authentication required'));
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError);
         
         // Redirect to login if refresh fails
-        KeycloakService.login();
+        window.location.href = '/login';
         return Promise.reject(refreshError);
       }
     }

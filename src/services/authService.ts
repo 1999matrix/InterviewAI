@@ -1,105 +1,113 @@
-import axios from 'axios';
-import Cookies from 'js-cookie';
+import apiClient from './httpInterceptor';
 
-const API_BASE_URL = import.meta.env.VITE_APP_CORE_API || 'http://localhost:8081/api/v1';
-
-// Create axios instance with default config
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true, // Important for session cookies
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Request interceptor to add auth token if available
-apiClient.interceptors.request.use( 
-  (config) => {
-    const token = Cookies.get('auth_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor to handle auth errors
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Clear auth data on unauthorized
-      Cookies.remove('auth_token');
-      localStorage.removeItem('user');
-      // Optionally redirect to login
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
+// Backend API configuration
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/v1';
 
 export interface User {
   id: string;
   username: string;
   email: string;
-  first_name?: string;
-  last_name?: string;
-  role: string;
-  provider: 'local' | 'google' | 'github' | 'keycloak';
-  profile_picture?: string;
-  is_email_verified: boolean;
-  created_at: string;
-  updated_at: string;
+  firstName?: string;
+  lastName?: string;
+  role: 'admin' | 'user' | 'moderator';
+  isActive: boolean;
+  phone?: string;
+  dateOfBirth?: string;
+  profilePicture?: string;
+  experience?: string;
+  avatarUrl?: string;
+  lastLogin?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface AuthResponse {
-  success: boolean;
-  message: string;
-  user?: User;
-  token?: string;
+export interface LoginCredentials {
+  email: string;
+  password: string;
 }
 
 export interface RegisterData {
   username: string;
   email: string;
   password: string;
-  first_name?: string;
-  last_name?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  dateOfBirth?: string;
 }
 
-export interface LoginData {
-  email: string;
-  password: string;
+export interface AuthResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: User;
+    token: string;
+  };
 }
 
 class AuthService {
-  // Traditional registration
-  async register(data: RegisterData): Promise<AuthResponse> {
-    try {
-      const response = await apiClient.post('/auth/register', data);
-      const { user, token } = response.data;
-      
-      if (user) {
-        this.setUserSession(user, token);
+  private _token: string | null = null;
+  private _user: User | null = null;
+  private _initialized: boolean = false;
+
+  constructor() {
+    // Initialize from localStorage
+    this._token = localStorage.getItem('auth_token');
+    const userData = localStorage.getItem('user_data');
+    if (userData) {
+      try {
+        this._user = JSON.parse(userData);
+      } catch (error) {
+        console.error('Failed to parse stored user data:', error);
+        localStorage.removeItem('user_data');
       }
-      
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Registration failed');
     }
   }
 
-  // Traditional login
-  async login(data: LoginData): Promise<AuthResponse> {
+  // Initialize auth service
+  async init(): Promise<boolean> {
+    if (this._initialized) {
+      return this.isAuthenticated();
+    }
+
     try {
-      const response = await apiClient.post('/auth/login', data);
-      const { user, token } = response.data;
+      this._initialized = true;
       
-      if (user) {
-        this.setUserSession(user, token);
+      // If we have a token, validate it by getting user profile
+      if (this._token) {
+        try {
+          await this.getCurrentUser();
+          return true;
+        } catch (error) {
+          // Token is invalid, clear it
+          this.clearAuthData();
+          return false;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Auth initialization failed:', error);
+      this._initialized = false;
+      throw error;
+    }
+  }
+
+  // Login with email and password
+  async login(credentials: LoginCredentials): Promise<AuthResponse> {
+    try {
+      const response = await apiClient.post<AuthResponse>(`${API_BASE_URL}/users/login`, credentials);
+      
+      if (response.data.success) {
+        this._token = response.data.data.token;
+        this._user = response.data.data.user;
+        
+        // Store in localStorage
+        localStorage.setItem('auth_token', this._token);
+        localStorage.setItem('user_data', JSON.stringify(this._user));
+        
+        // Set token in axios defaults
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${this._token}`;
       }
       
       return response.data;
@@ -108,112 +116,161 @@ class AuthService {
     }
   }
 
+  // Register new user
+  async register(userData: RegisterData): Promise<AuthResponse> {
+    try {
+      const response = await apiClient.post<AuthResponse>(`${API_BASE_URL}/users`, userData);
+      
+      if (response.data.success) {
+        // Auto-login after registration
+        return await this.login({
+          email: userData.email,
+          password: userData.password
+        });
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Registration failed');
+    }
+  }
+
   // Logout
   async logout(): Promise<void> {
     try {
-      await apiClient.post('/auth/logout');
+      // Call backend logout endpoint
+      if (this._token) {
+        await apiClient.post(`${API_BASE_URL}/users/logout`);
+      }
     } catch (error) {
-      // Even if logout fails on server, clear local data
-      console.error('Logout error:', error);
+      console.error('Logout API call failed:', error);
     } finally {
-      this.clearUserSession();
+      this.clearAuthData();
     }
   }
 
-  // Get current user
-  async getCurrentUser(): Promise<User | null> {
+  // Get current user profile
+  async getCurrentUser(): Promise<User> {
+    if (!this._token) {
+      throw new Error('No authentication token available');
+    }
+
     try {
-      const response = await apiClient.get('/auth/me');
-      return response.data.user;
-    } catch (error) {
-      return null;
+      const response = await apiClient.get<{success: boolean; data: User}>(`${API_BASE_URL}/users/profile`);
+      
+      if (response.data.success) {
+        this._user = response.data.data;
+        localStorage.setItem('user_data', JSON.stringify(this._user));
+        return this._user;
+      }
+      
+      throw new Error('Failed to get user profile');
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to get user profile');
     }
   }
 
-  // Check authentication status
-  async checkAuthStatus(): Promise<{ authenticated: boolean; user?: User }> {
+  // Google OAuth login
+  async loginWithGoogle(): Promise<void> {
     try {
-      const response = await apiClient.get('/auth/status');
-      return response.data;
+      // Redirect to Google OAuth endpoint
+      const googleOAuthUrl = `${API_BASE_URL}/auth/google`;
+      window.location.href = googleOAuthUrl;
     } catch (error) {
-      return { authenticated: false };
+      console.error('Google OAuth login failed:', error);
+      throw new Error('Google login failed');
     }
   }
 
-  // OAuth login URLs
-  getGoogleLoginUrl(): string {
-    return `${API_BASE_URL}/auth/google`;
-  }
-
-  getGitHubLoginUrl(): string {
-    return `${API_BASE_URL}/auth/github`;
-  }
-
-  // Set user session
-  private setUserSession(user: User, token?: string): void {
-    localStorage.setItem('user', JSON.stringify(user));
-    if (token) {
-      Cookies.set('auth_token', token, { 
-        expires: 7, // 7 days
-        secure: import.meta.env.NODE_ENV === 'production',
-        sameSite: 'lax'
-      });
-    }
-  }
-
-  // Clear user session
-  private clearUserSession(): void {
-    localStorage.removeItem('user');
-    Cookies.remove('auth_token');
-  }
-
-  // Get stored user
-  getStoredUser(): User | null {
+  // LinkedIn OAuth login
+  async loginWithLinkedIn(): Promise<void> {
     try {
-      const user = localStorage.getItem('user');
-      return user ? JSON.parse(user) : null;
+      // Redirect to LinkedIn OAuth endpoint
+      const linkedInOAuthUrl = `${API_BASE_URL}/auth/linkedin`;
+      window.location.href = linkedInOAuthUrl;
     } catch (error) {
-      return null;
+      console.error('LinkedIn OAuth login failed:', error);
+      throw new Error('LinkedIn login failed');
     }
+  }
+
+  // Handle OAuth callback
+  async handleOAuthCallback(token: string, userData: User): Promise<void> {
+    this._token = token;
+    this._user = userData;
+    
+    // Store in localStorage
+    localStorage.setItem('auth_token', token);
+    localStorage.setItem('user_data', JSON.stringify(userData));
+    
+    // Set token in axios defaults
+    apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   }
 
   // Check if user is authenticated
   isAuthenticated(): boolean {
-    const user = this.getStoredUser();
-    const token = Cookies.get('auth_token');
-    return !!(user && (token || user.provider !== 'local'));
+    return !!this._token && !!this._user;
   }
 
-  // Update user profile
-  async updateProfile(data: Partial<User>): Promise<User> {
+  // Get user info
+  getUserInfo(): User | null {
+    return this._user;
+  }
+
+  // Get access token
+  getToken(): string | undefined {
+    return this._token || undefined;
+  }
+
+  // Check if user has role
+  hasRole(role: string): boolean {
+    return this._user?.role === role || false;
+  }
+
+  // Check if user has resource role (simplified for now)
+  hasResourceRole(role: string, _resource: string): boolean {
+    // For now, just check the user role
+    // TODO: Implement resource-specific role checking
+    return this.hasRole(role);
+  }
+
+  // Update token (for compatibility with existing code)
+  async updateToken(_minValidity = 30): Promise<boolean> {
     try {
-      const response = await apiClient.put('/users/profile', data);
-      const updatedUser = response.data.user;
-      
-      if (updatedUser) {
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+      // For JWT tokens, we might need to refresh them
+      // For now, just validate the current token
+      if (this._token) {
+        await this.getCurrentUser();
+        return true;
       }
-      
-      return updatedUser;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Profile update failed');
+      return false;
+    } catch (error) {
+      console.error('Token update failed:', error);
+      return false;
     }
   }
 
-  // Change password
-  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
-    try {
-      const user = this.getStoredUser();
-      if (!user) throw new Error('User not found');
-      
-      await apiClient.post(`/users/${user.id}/change-password`, {
-        currentPassword,
-        newPassword
-      });
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Password change failed');
-    }
+  // Account management (redirect to profile page)
+  accountManagement(): void {
+    // For now, we can redirect to profile page or show a modal
+    window.location.href = '/profile';
   }
+
+  // Clear authentication data
+  private clearAuthData(): void {
+    this._token = null;
+    this._user = null;
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_data');
+    delete apiClient.defaults.headers.common['Authorization'];
+  }
+
+  // Setup token refresh (for future JWT refresh token implementation)
+  // private setupTokenRefresh(): void {
+  //   // TODO: Implement JWT refresh token logic if needed
+  //   // For now, we'll rely on backend session management
+  // }
 }
 
+// Export singleton instance
 export default new AuthService();

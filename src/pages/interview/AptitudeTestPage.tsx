@@ -444,7 +444,7 @@ const AptitudeTestPage: React.FC = () => {
             
             <div className="flex justify-center mt-8 space-x-4">
               <Button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/interview/home')}
                 variant="outline"
                 className="px-8"
               >
