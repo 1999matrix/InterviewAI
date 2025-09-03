@@ -11,10 +11,11 @@ declare global {
 //const serverUrl = "http://192.168.143.219:7777/api/v1";
 const serverUrl = import.meta.env.VITE_APP_API_BASE;
 
-// WebSocket URL for comp3 interviews
+// WebSocket URL for comp3 interviews - connect to bhopu backend
 const getWebSocketUrl = () => {
-  const baseUrl = serverUrl.replace('http://', 'ws://').replace('https://', 'wss://');
-  return baseUrl;
+  // For WebSocket interviews, connect to bhopu backend on port 7777
+  // For regular API calls, use the compiler backend on port 8081
+  return import.meta.env.VITE_WEBSOCKET_URL || "ws://localhost:7777";
 };
 
 // WebSocket Interview Manager for comp3

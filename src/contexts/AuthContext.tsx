@@ -14,6 +14,7 @@ interface AuthContextType {
   hasResourceRole: (role: string, resource: string) => boolean;
   getToken: () => string | undefined;
   updateToken: (minValidity?: number) => Promise<boolean>;
+  refreshToken: () => Promise<boolean>;
   accountManagement: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -31,6 +32,7 @@ const AuthContext = createContext<AuthContextType>({
   hasResourceRole: () => false,
   getToken: () => undefined,
   updateToken: async () => false,
+  refreshToken: async () => false,
   accountManagement: () => {},
   refreshUser: async () => {},
 });
@@ -118,8 +120,16 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       }
     } catch (error) {
       console.error('Failed to load user profile:', error);
-      setIsAuthenticated(false);
-      setUser(null);
+      // Try to refresh token
+      const refreshed = await AuthService.refreshToken();
+      if (refreshed) {
+        const freshUser = await AuthService.getCurrentUser();
+        setUser(freshUser);
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+      }
     }
   };
   
@@ -195,6 +205,20 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
   };
 
+  const refreshToken = async (): Promise<boolean> => {
+    try {
+      const refreshed = await AuthService.refreshToken();
+      if (refreshed) {
+        await loadUserProfile();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      return false;
+    }
+  };
+
   const refreshUser = async () => {
     try {
       const freshUser = await AuthService.getCurrentUser();
@@ -245,6 +269,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       hasResourceRole,
       getToken,
       updateToken,
+      refreshToken,
       accountManagement,
       refreshUser,
     }}>

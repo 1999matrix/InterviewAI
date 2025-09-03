@@ -40,62 +40,65 @@ const AppRoutes: React.FC = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
-
       </Route>
       
       {/* Protected Routes - Basic Authentication Required */}
       <Route element={<MainLayout />}>
         <Route path="/dashboard" element={
-          // <ProtectedRoute>
+          <ProtectedRoute>
             <DashboardPage />
-          // </ProtectedRoute>
+          </ProtectedRoute>
         } />
         <Route path="/create-session" element={
-          // <ProtectedRoute>
+          <ProtectedRoute>
             <CreateSessionPage />
-          // </ProtectedRoute>
+          </ProtectedRoute>
         } />
         <Route path="/interview/websocket-session" element={
-          <WebSocketInterviewPage />
+          <ProtectedRoute>
+            <WebSocketInterviewPage />
+          </ProtectedRoute>
         } />
         <Route path="/interview/create" element={
-          // <ProtectedRoute>
+          <ProtectedRoute>
             <CreateSessionPage />
-          // </ProtectedRoute>
+          </ProtectedRoute>
         } />
         <Route path="/interview/home" element={
-          // <ProtectedRoute>
+          <ProtectedRoute>
             <ProfilePage />
-          // </ProtectedRoute>
+          </ProtectedRoute>
         } />
         <Route path="/interview/profile" element={
-          // <ProtectedRoute>
+          <ProtectedRoute>
             <Profile />
-          // </ProtectedRoute>
+          </ProtectedRoute>
         } />
         <Route path="/interview/session" element={
-          // <ProtectedRoute>
+          <ProtectedRoute>
             <InterviewPage />
-          // </ProtectedRoute>
+          </ProtectedRoute>
         } />
         <Route path="/interview/coding-test" element={
-          // <ProtectedRoute>
+          <ProtectedRoute>
             <CodingTestPage />
-          // </ProtectedRoute>
+          </ProtectedRoute>
         } />
         <Route path="/interview/aptitude-test" element={
-          // <ProtectedRoute>
+          <ProtectedRoute>
             <AptitudeTestPage />
-          // </ProtectedRoute>
+          </ProtectedRoute>
         } />
         <Route path="/interview/results" element={
-          // <ProtectedRoute>
+          <ProtectedRoute>
             <CodingTestResultsPage />
-          // </ProtectedRoute>
+          </ProtectedRoute>
         } />
-        {/* <Route path="/interview/schedule" element={
-          <Scheduler />
-        } /> */}
+        <Route path="/interview/schedule" element={
+          <ProtectedRoute>
+            <Scheduler />
+          </ProtectedRoute>
+        } />
         <Route path="/interview/blogs" element={
           <ProtectedRoute>
             <div>Blogs</div>
@@ -116,7 +119,11 @@ const AppRoutes: React.FC = () => {
             <div>Write to Us</div>
           </ProtectedRoute>
         } />
-      <Route path="/resume" element={<ResumeAnalyzerPage />} />
+        <Route path="/resume" element={
+          <ProtectedRoute>
+            <ResumeAnalyzerPage />
+          </ProtectedRoute>
+        } />
       </Route>
       
       {/* Interview Routes with Sidebar - Role-based Protection */}

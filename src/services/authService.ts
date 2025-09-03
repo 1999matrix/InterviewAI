@@ -96,7 +96,7 @@ class AuthService {
   // Login with email and password
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      const response = await apiClient.post<AuthResponse>(`${API_BASE_URL}/users/login`, credentials);
+      const response = await apiClient.post<AuthResponse>(`${API_BASE_URL}/auth/login`, credentials);
       
       if (response.data.success) {
         this._token = response.data.data.token;
@@ -119,7 +119,7 @@ class AuthService {
   // Register new user
   async register(userData: RegisterData): Promise<AuthResponse> {
     try {
-      const response = await apiClient.post<AuthResponse>(`${API_BASE_URL}/users`, userData);
+      const response = await apiClient.post<AuthResponse>(`${API_BASE_URL}/auth/register`, userData);
       
       if (response.data.success) {
         // Auto-login after registration
@@ -140,7 +140,7 @@ class AuthService {
     try {
       // Call backend logout endpoint
       if (this._token) {
-        await apiClient.post(`${API_BASE_URL}/users/logout`);
+        await apiClient.post(`${API_BASE_URL}/auth/logout`);
       }
     } catch (error) {
       console.error('Logout API call failed:', error);
@@ -167,6 +167,32 @@ class AuthService {
       throw new Error('Failed to get user profile');
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to get user profile');
+    }
+  }
+
+  // Refresh token
+  async refreshToken(): Promise<boolean> {
+    try {
+      const response = await apiClient.post<{success: boolean; data: {token: string; user: User}}>(`${API_BASE_URL}/auth/refresh`);
+      
+      if (response.data.success) {
+        this._token = response.data.data.token;
+        this._user = response.data.data.user;
+        
+        // Update localStorage
+        localStorage.setItem('auth_token', this._token);
+        localStorage.setItem('user_data', JSON.stringify(this._user));
+        
+        // Update axios headers
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${this._token}`;
+        
+        return true;
+      }
+      
+      return false;
+    } catch (error: any) {
+      console.error('Token refresh failed:', error);
+      return false;
     }
   }
 
@@ -235,25 +261,27 @@ class AuthService {
   }
 
   // Update token (for compatibility with existing code)
-  async updateToken(_minValidity = 30): Promise<boolean> {
+  async updateToken(minValidity = 30): Promise<boolean> {
     try {
-      // For JWT tokens, we might need to refresh them
-      // For now, just validate the current token
+      // Check if token needs refresh (if expires in less than minValidity seconds)
       if (this._token) {
+        // For JWT tokens, we might need to refresh them
+        // For now, just validate the current token
         await this.getCurrentUser();
         return true;
       }
       return false;
     } catch (error) {
       console.error('Token update failed:', error);
-      return false;
+      // Try to refresh token
+      return await this.refreshToken();
     }
   }
 
   // Account management (redirect to profile page)
   accountManagement(): void {
     // For now, we can redirect to profile page or show a modal
-    window.location.href = '/profile';
+    window.location.href = '/interview/profile';
   }
 
   // Clear authentication data
