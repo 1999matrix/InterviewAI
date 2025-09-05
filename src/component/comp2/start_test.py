@@ -22,47 +22,67 @@ class QuestionFetcherComp2:
     def generate_question_from_cv(self):
         """
         Fetches the user's CV from the database, generates questions from it,
-        and returns a DataFrame of questions.
+        and returns a DataFrame of questions. If CV is not present or CV fetching is disabled,
+        generates questions based on role and experience.
         """
-        # Check if CV fetching is disabled
-        if not self.cv:
-            raise ValueError("CV fetching is disabled for this user.")
-
         # Establish database connection
         connection = connect_to_db()
         if connection is None:
             raise ConnectionError("Failed to connect to the database.")
 
         try:
-            cursor = connection.cursor()
+            extracted_cv_text = None
             
-            # Fetch CV based on username
-            query = "SELECT pdf_file FROM user_cv_table WHERE username = %s"
-            cursor.execute(query, (self.username,))
-            result = cursor.fetchone()
+            # Only try to fetch CV if CV flag is enabled
+            if self.cv:
+                try:
+                    cursor = connection.cursor()
+                    
+                    # Fetch CV based on username
+                    query = "SELECT pdf_file FROM user_cv_table WHERE username = %s"
+                    cursor.execute(query, (self.username,))
+                    result = cursor.fetchone()
 
-            # Check if CV exists
-            if result is None or result[0] is None:
-                # Raise a specific error when no CV is found
-                raise FileNotFoundError(f"No CV found for username: {self.username}")
+                    # Check if CV exists
+                    if result is not None and result[0] is not None:
+                        # Extract the PDF binary data from the database result
+                        pdf_data = result[0]
 
-            # Extract the PDF binary data from the database result
-            pdf_data = result[0]
+                        # Extract text from the in-memory PDF
+                        extract_text_instance = extract_text_with_pdf(pdf_data, self.username)
+                        extracted_cv_text = extract_text_instance.extract_text_with_pymupdf()
+                except Exception as e:
+                    print(f"Error fetching CV: {e}")
+                    extracted_cv_text = None  # Continue without CV
+            
+            # Generate questions based on CV if available, otherwise use role and experience
+            if extracted_cv_text:
+                # Prepare text for question generation
+                mid_prompt = "This is job description if it is not empty string then generate question" \
+                "based on job description as well. \n if not present then ignore this part. \n"
 
-            # Extract text from the in-memory PDF
-            extract_text_instance = extract_text_with_pdf(pdf_data, self.username)
-            extracted_cv_text = extract_text_instance.extract_text_with_pymupdf()
-
-            # Prepare text for question generation
-            mid_prompt = "This is job description if it is not empty string then generate question" \
-            "based on job description as well. \n if not present then ignore this part. \n"
-
-            # Combine CV text with job description
-            extracted_cv_text = extracted_cv_text + mid_prompt + self.job_description
-            print(extracted_cv_text)
-
-            # Generate questions
-            questions = question_generator(extracted_cv_text)
+                # Combine CV text with job description
+                combined_text = extracted_cv_text + mid_prompt + self.job_description
+                print("Generating questions from CV")
+                questions = question_generator(combined_text)
+            else:
+                # If CV is not available, use the generate_interview_question function
+                print("Generating questions based on role and experience")
+                from src.model.groq import generate_interview_question
+                
+                # Generate multiple questions
+                total_questions = int(os.getenv("TOTAL_QUESTION_GENERATE", "15"))
+                questions = []
+                for _ in range(total_questions):
+                    question = generate_interview_question(
+                        cv_content=None,
+                        role=self.role,
+                        job_description=self.job_description,
+                        experience=self.experience,
+                        previous_questions=[],
+                        previous_responses=[]
+                    )
+                    questions.append(question)
 
             # Parse questions into a list (ensure it's not a single string)
             if isinstance(questions, str):
@@ -74,13 +94,13 @@ class QuestionFetcherComp2:
 
             return df
 
-        except (FileNotFoundError, ConnectionError) as e:
+        except ConnectionError as e:
             # Re-raise specific errors to be handled by the API
             raise
         except Exception as e:
             # Log the error and raise a generic exception
-            print(f"An error occurred while fetching CV: {e}")
-            raise ValueError(f"An error occurred while fetching CV: {e}")
+            print(f"An error occurred while generating questions: {e}")
+            raise ValueError(f"An error occurred while generating questions: {e}")
         finally:
             # Ensure connection is closed
             if connection:
