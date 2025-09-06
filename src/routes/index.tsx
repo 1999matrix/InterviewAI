@@ -45,100 +45,100 @@ const AppRoutes: React.FC = () => {
       {/* Protected Routes - Basic Authentication Required */}
       <Route element={<MainLayout />}>
         <Route path="/dashboard" element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <DashboardPage />
-          </ProtectedRoute>
+          // </ProtectedRoute>
         } />
         <Route path="/create-session" element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <CreateSessionPage />
-          </ProtectedRoute>
+          // </ProtectedRoute>
         } />
         <Route path="/interview/websocket-session" element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <WebSocketInterviewPage />
-          </ProtectedRoute>
+          // </ProtectedRoute>
         } />
         <Route path="/interview/create" element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <CreateSessionPage />
-          </ProtectedRoute>
+          // </ProtectedRoute>
         } />
         <Route path="/interview/home" element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <ProfilePage />
-          </ProtectedRoute>
+          // </ProtectedRoute>
         } />
         <Route path="/interview/profile" element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <Profile />
-          </ProtectedRoute>
+          // </ProtectedRoute>
         } />
         <Route path="/interview/session" element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <InterviewPage />
-          </ProtectedRoute>
+          // </ProtectedRoute>
         } />
         <Route path="/interview/coding-test" element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <CodingTestPage />
-          </ProtectedRoute>
+          // </ProtectedRoute>
         } />
         <Route path="/interview/aptitude-test" element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <AptitudeTestPage />
-          </ProtectedRoute>
+          // </ProtectedRoute>
         } />
         <Route path="/interview/results" element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <CodingTestResultsPage />
-          </ProtectedRoute>
+          // </ProtectedRoute>
         } />
         <Route path="/interview/schedule" element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <Scheduler />
-          </ProtectedRoute>
+          // </ProtectedRoute>
         } />
         <Route path="/interview/blogs" element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <div>Blogs</div>
-          </ProtectedRoute>
+          // </ProtectedRoute>
         } />
         <Route path="/interview/affiliate" element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <div>Become Affiliate</div>
-          </ProtectedRoute>
+          // </ProtectedRoute>
         } />
         <Route path="/interview/feedback" element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <div>Feedback</div>
-          </ProtectedRoute>
+          // </ProtectedRoute>
         } />
         <Route path="/interview/contact" element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <div>Write to Us</div>
-          </ProtectedRoute>
+          // </ProtectedRoute>
         } />
         <Route path="/resume" element={
-          <ProtectedRoute>
+          // <ProtectedRoute>
             <ResumeAnalyzerPage />
-          </ProtectedRoute>
+          // </ProtectedRoute>
         } />
       </Route>
       
       {/* Interview Routes with Sidebar - Role-based Protection */}
       <Route element={
-        <ProtectedRoute roles={['user', 'premium-user']}>
+        // <ProtectedRoute roles={['user', 'premium-user']}>
           <InterviewLayout />
-        </ProtectedRoute>
+        // </ProtectedRoute>
       }>
       </Route>
       
       {/* Admin Routes - Admin Role Required */}
       <Route element={
-        <ProtectedRoute roles={['admin']} fallbackPath="/unauthorized">
+        // <ProtectedRoute roles={['admin']} fallbackPath="/unauthorized">
           <DashboardLayout />
-        </ProtectedRoute>
+        // </ProtectedRoute>
       }>
         {/* Add admin-specific routes here */}
         <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
@@ -148,9 +148,9 @@ const AppRoutes: React.FC = () => {
       {/* Premium Routes - Premium Role Required */}
       <Route element={<MainLayout />}>
         <Route path="/premium/features" element={
-          <ProtectedRoute roles={['premium-user']} fallbackPath="/pricing">
+          // <ProtectedRoute roles={['premium-user']} fallbackPath="/pricing">
             <div>Premium Features</div>
-          </ProtectedRoute>
+          // </ProtectedRoute>
         } />
       </Route>
       

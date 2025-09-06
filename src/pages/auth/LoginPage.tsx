@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { LogIn, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../../components/ui/Button';
+import AuthService from '../../services/authService';
 
 const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -19,6 +20,21 @@ const LoginPage: React.FC = () => {
   
   // Redirect if already authenticated
   useEffect(() => {
+    // Handle OAuth redirect with token & user query params
+    const searchParams = new URLSearchParams(location.search);
+    const token = searchParams.get('token');
+    const userParam = searchParams.get('user');
+    if (token && userParam) {
+      try {
+        const parsedUser = JSON.parse(decodeURIComponent(userParam));
+        AuthService.handleOAuthCallback(token, parsedUser);
+        navigate('/dashboard', { replace: true });
+        return;
+      } catch (e) {
+        console.error('Failed to handle OAuth callback:', e);
+      }
+    }
+
     if (isAuthenticated && !authLoading) {
       const from = location.state?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });

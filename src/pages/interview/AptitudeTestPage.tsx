@@ -550,7 +550,7 @@ const AptitudeTestPage: React.FC = () => {
             <div className="w-80 bg-white shadow-sm border-r p-4">
               <div className="mb-4">
                 <h3 className="font-semibold text-stone-900 mb-2">Question Palette</h3>
-                <div className="text-xs text-gray-stone space-y-1">
+                <div className="text-xs text-stone-700 space-y-1">
                   <div>Total: {questions.length}</div>
                   <div className="grid grid-cols-2 gap-2 text-stone-700 font-bold">
                     <div>Answered: {statusSummary.answered}</div>
