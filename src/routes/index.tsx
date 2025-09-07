@@ -28,6 +28,7 @@ import CodingTestResultsPage from '../pages/interview/CodingTestResultsPage';
 import Scheduler from '../pages/user/Scheduler';
 import Profile from '../pages/user/Profile';
 import WebSocketInterviewPage from '../pages/interview/WebSocketInterviewPage'; 
+import PaymentPage from '../pages/PaymentPage';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -49,6 +50,7 @@ const AppRoutes: React.FC = () => {
             <DashboardPage />
           // </ProtectedRoute>
         } />
+        <Route path="/payment" element={<PaymentPage />} />
         <Route path="/create-session" element={
           // <ProtectedRoute>
             <CreateSessionPage />

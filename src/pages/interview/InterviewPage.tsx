@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useReactMediaRecorder } from 'react-media-recorder';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Mic, 
@@ -59,8 +60,13 @@ const InterviewPage: React.FC = () => {
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
+  // Audio recording via react-media-recorder
+  const {
+    status: recordingStatus,
+    startRecording: startMediaRecording,
+    stopRecording: stopMediaRecording,
+    mediaBlobUrl
+  } = useReactMediaRecorder({ audio: true });
   const wsManagerRef = useRef<WebSocketInterviewManager | null>(null);
   
   // State management
@@ -320,36 +326,28 @@ const InterviewPage: React.FC = () => {
     }
   }, [currentQuestion, playQuestionAudio]);
 
-  // Start recording
+  // Sync recording UI state with hook status
+  useEffect(() => {
+    setIsRecording(recordingStatus === 'recording');
+  }, [recordingStatus]);
+
+  // Start/Stop recording using library
   const startRecording = useCallback(async () => {
     try {
-      if (!mediaStream) return;
-      
-      audioChunksRef.current = [];
-      const mediaRecorder = new MediaRecorder(mediaStream);
-      mediaRecorderRef.current = mediaRecorder;
-      
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-      
-      mediaRecorder.start();
-      setIsRecording(true);
+      await startMediaRecording();
     } catch (error) {
       console.error('Error starting recording:', error);
       setError('Failed to start recording. Please check microphone permissions.');
     }
-  }, [mediaStream]);
+  }, [startMediaRecording]);
 
-  // Stop recording
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
+  const stopRecording = useCallback(async () => {
+    try {
+      await stopMediaRecording();
+    } catch (error) {
+      console.error('Error stopping recording:', error);
     }
-  }, [isRecording]);
+  }, [stopMediaRecording]);
 
   // Handle next question (comp2)
   const getNextQuestionHttp = useCallback(async (responseText?: string) => {
@@ -616,30 +614,34 @@ const InterviewPage: React.FC = () => {
                     )}
                     <span>{isAudioPlaying ? 'Pause' : 'Play'}</span>
                   </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={replayQuestion}
-                    className="flex items-center space-x-2"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    <span>Replay</span>
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={toggleAudioMute}
-                    className="flex items-center space-x-2"
-                  >
-                    {isAudioMuted ? (
-                      <VolumeX className="w-4 h-4" />
-                    ) : (
-                      <Volume2 className="w-4 h-4" />
-                    )}
-                    <span>{isAudioMuted ? 'Unmute' : 'Mute'}</span>
-                  </Button>
+                  {/* Hide extra controls for comp2; keep richer controls for comp3 only */}
+                  {interviewState.interviewMode !== 'comp2' && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={replayQuestion}
+                        className="flex items-center space-x-2"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        <span>Replay</span>
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleAudioMute}
+                        className="flex items-center space-x-2"
+                      >
+                        {isAudioMuted ? (
+                          <VolumeX className="w-4 h-4" />
+                        ) : (
+                          <Volume2 className="w-4 h-4" />
+                        )}
+                        <span>{isAudioMuted ? 'Unmute' : 'Mute'}</span>
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -702,29 +704,15 @@ const InterviewPage: React.FC = () => {
             ) : (
               /* HTTP Controls (comp2) */
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    onClick={() => getNextQuestionHttp()}
-                    disabled={isLoading}
-                    size="sm"
-                    className="flex items-center justify-center space-x-2"
-                  >
-                    <SkipForward className="w-4 h-4" />
-                    <span>Next</span>
-                  </Button>
-                  
-                  <Button
-                    onClick={skipQuestion}
-                    disabled={isLoading}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center justify-center space-x-2"
-                  >
-                    <SkipForward className="w-4 h-4" />
-                    <span>Skip</span>
-                  </Button>
-                </div>
-                
+                <Button
+                  onClick={() => getNextQuestionHttp()}
+                  disabled={isLoading}
+                  className="w-full flex items-center justify-center space-x-2"
+                >
+                  <SkipForward className="w-4 h-4" />
+                  <span>Next</span>
+                </Button>
+
                 <Button
                   onClick={isRecording ? stopRecording : startRecording}
                   variant={isRecording ? "danger" : "primary"}
@@ -745,45 +733,8 @@ const InterviewPage: React.FC = () => {
               </div>
             )}
             
-            {/* Common Controls */}
+            {/* End Interview */}
             <div className="mt-6 pt-4 border-t border-gray-700">
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                <Button
-                  onClick={toggleMicrophone}
-                  variant={isMicEnabled ? "primary" : "danger"}
-                  size="sm"
-                  className="flex items-center justify-center"
-                >
-                  {isMicEnabled ? (
-                    <Mic className="w-4 h-4" />
-                  ) : (
-                    <MicOff className="w-4 h-4" />
-                  )}
-                </Button>
-                
-                <Button
-                  onClick={toggleVideo}
-                  variant={isVideoEnabled ? "primary" : "danger"}
-                  size="sm"
-                  className="flex items-center justify-center"
-                >
-                  {isVideoEnabled ? (
-                    <Video className="w-4 h-4" />
-                  ) : (
-                    <VideoOff className="w-4 h-4" />
-                  )}
-                </Button>
-                
-                <Button
-                  onClick={endInterview}
-                  variant="danger"
-                  size="sm"
-                  className="flex items-center justify-center"
-                >
-                  <PhoneOff className="w-4 h-4" />
-                </Button>
-              </div>
-              
               <Button
                 onClick={endInterview}
                 variant="danger"

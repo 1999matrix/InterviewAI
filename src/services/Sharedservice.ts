@@ -466,6 +466,8 @@ const updatUserData = (url: string, data: any) => {
 
 export {
     serverUrl, 
+    // payments
+    
     saveResume, 
     getQuestion, 
     getQuestionDropdown, 
